@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Quản Trị Cửa Hàng - Lani Coffee</title>
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="background:#f8f9fa;">
+
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-brand">
+                <i class="ri-coffe-bean-fill"></i> Lani Admin
+            </div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item active"><a href="/admin/dashboard"><i class="ri-dashboard-line"></i> Dashboard</a></li>
+                <li class="sidebar-item"><a href="/admin/products"><i class="ri-shopping-bag-line"></i> CRUD Sản phẩm</a></li>
+                <li class="sidebar-item"><a href="/admin/categories"><i class="ri-list-check-3"></i> Danh mục</a></li>
+                <li class="sidebar-item"><a href="/admin/orders"><i class="ri-bill-line"></i> Đơn hàng trực tuyến</a></li>
+                <li class="sidebar-item"><a href="/admin/coupons"><i class="ri-coupon-2-line"></i> Quản lý Khuyến mãi</a></li>
+                <li class="sidebar-item"><a href="/admin/users"><i class="ri-user-settings-line"></i> Tài khoản khách</a></li>
+                <li class="sidebar-item"><a href="/admin/reviews"><i class="ri-message-3-line"></i> Duyệt bình luận</a></li>
+                <li class="sidebar-item" style="margin-top: 40px; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px;">
+                    <a href="/"><i class="ri-arrow-left-line"></i> Xem Cửa hàng</a>
+                </li>
+                <li class="sidebar-item"><a href="#" onclick="handleLogout()"><i class="ri-logout-box-line"></i> Đăng xuất</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content Panel -->
+        <main class="admin-main">
+            <header class="admin-header">
+                <div>
+                    <h2 style="font-size:26px;">Dashboard Thống Kê Tổng Quan</h2>
+                    <p style="font-size:13px; color:rgba(78,46,30,0.6);">Thống kê doanh số, lượng khách và hiệu năng bán hàng online.</p>
+                </div>
+                <div style="display:flex; align-items:center; gap:12px;">
+                    <span style="font-weight:600;"><i class="ri-shield-user-line"></i> Xin chào, Admin</span>
+                </div>
+            </header>
+
+            <!-- LOW STOCK WARNING PANEL -->
+            <div id="low-stock-alert-panel" class="table-panel" style="display: none; border-left: 5px solid var(--warning); margin-bottom: 24px;">
+                <div style="padding: 16px 24px; background: rgba(202, 103, 2, 0.08); display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 12px; color: var(--warning);">
+                        <i class="ri-error-warning-fill" style="font-size: 24px;"></i>
+                        <h4 style="margin: 0; color: var(--warning);">Cảnh Báo Tồn Kho Sắp Hết (Dưới 5 sản phẩm)</h4>
+                    </div>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Hình ảnh</th>
+                            <th>Tên sản phẩm</th>
+                            <th>Thương hiệu</th>
+                            <th>Giá gốc</th>
+                            <th style="color: var(--warning);">Tồn kho còn lại</th>
+                        </tr>
+                    </thead>
+                    <tbody id="low-stock-tbody">
+                        <!-- Load qua JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Metrics Cards Grid -->
+            <div class="metrics-grid">
+                <!-- Total Sales Revenue -->
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-title">Tổng doanh thu</span>
+                        <span class="metric-value" id="stat-revenue">0 đ</span>
+                    </div>
+                    <div class="metric-icon sales">
+                        <i class="ri-money-dollar-circle-line"></i>
+                    </div>
+                </div>
+
+                <!-- Total Orders -->
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-title">Đơn đặt hàng</span>
+                        <span class="metric-value" id="stat-orders-count">0 đơn</span>
+                    </div>
+                    <div class="metric-icon orders">
+                        <i class="ri-shopping-basket-line"></i>
+                    </div>
+                </div>
+
+                <!-- Total Registered Users -->
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-title">Khách hàng</span>
+                        <span class="metric-value" id="stat-users-count">0 user</span>
+                    </div>
+                    <div class="metric-icon users">
+                        <i class="ri-user-3-line"></i>
+                    </div>
+                </div>
+
+                <!-- Total Product Reviews -->
+                <div class="metric-card">
+                    <div class="metric-info">
+                        <span class="metric-title">Bình luận mới</span>
+                        <span class="metric-value" id="stat-reviews-count">0</span>
+                    </div>
+                    <div class="metric-icon reviews">
+                        <i class="ri-chat-voice-line"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders Data Panel -->
+            <div class="table-panel">
+                <div class="table-header-row">
+                    <h3 style="font-size:18px;"><i class="ri-history-line"></i> Các đơn hàng đặt mua gần nhất</h3>
+                    <a href="/admin/orders" class="nav-btn outline" style="padding:6px 14px; font-size:13px;">Xem tất cả</a>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Số điện thoại</th>
+                            <th>Phương thức</th>
+                            <th>Tổng thanh toán</th>
+                            <th>Trạng thái</th>
+                            <th>Thời điểm</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recent-orders-tbody">
+                        <!-- Load động qua JS -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verify admin authentication
+            fetch('/api/users/me')
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.json();
+                })
+                .then(user => {
+                    if (user.role.toLowerCase() === 'staff') {
+                        window.location.href = '/admin/orders';
+                    } else if (user.role.toLowerCase() !== 'admin') {
+                        window.location.href = '/login';
+                    } else {
+                        loadDashboardStats();
+                    }
+                })
+                .catch(() => {
+                    window.location.href = '/login';
+                });
+        });
+
+        function loadDashboardStats() {
+            // Fetch low stock warning
+            fetch('/api/products')
+                .then(res => res.json())
+                .then(products => {
+                    const lowStockList = products.filter(p => p.stock < 5);
+                    const panel = document.getElementById('low-stock-alert-panel');
+                    const tbody = document.getElementById('low-stock-tbody');
+                    tbody.innerHTML = '';
+
+                    if (lowStockList.length > 0) {
+                        panel.style.display = 'block';
+                        lowStockList.forEach(p => {
+                            const tr = document.createElement('tr');
+                            tr.innerHTML = `
+                                <td><img src="${p.imageUrl || '/uploads/default.png'}" style="height:40px; width:auto; object-fit:contain;" onerror="handleImgError(this)"></td>
+                                <td><strong>${p.name}</strong></td>
+                                <td>${p.brand || 'Lani Premium'}</td>
+                                <td>${formatPrice(p.price)}</td>
+                                <td style="font-weight:700; color:var(--warning);">${p.stock} sản phẩm</td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                    } else {
+                        panel.style.display = 'none';
+                    }
+                });
+
+            // Fetch users count
+            fetch('/api/users')
+                .then(res => res.json())
+                .then(users => {
+                    document.getElementById('stat-users-count').innerText = `${users.length} khách`;
+                });
+
+            // Fetch reviews count
+            fetch('/api/reviews')
+                .then(res => res.json())
+                .then(reviews => {
+                    document.getElementById('stat-reviews-count').innerText = reviews.length;
+                });
+
+            // Fetch orders statistics
+            fetch('/api/orders')
+                .then(res => res.json())
+                .then(orders => {
+                    document.getElementById('stat-orders-count').innerText = `${orders.length} đơn`;
+
+                    // Calculate total revenue from COMPLETED orders
+                    let revenue = 0.0;
+                    orders.forEach(o => {
+                        if (o.status.toUpperCase() === 'COMPLETED') {
+                            revenue += o.totalAmount;
+                        }
+                    });
+                    document.getElementById('stat-revenue').innerText = formatPrice(revenue);
+
+                    // Render recent 5 orders
+                    const tbody = document.getElementById('recent-orders-tbody');
+                    tbody.innerHTML = '';
+
+                    const recent = orders.slice(0, 5);
+                    if (recent.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="7" style="text-align:center; padding:30px; color:rgba(78,46,30,0.6);">Chưa có đơn hàng online nào được đặt!</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    recent.forEach(o => {
+                        const dt = new Date(o.createdAt).toLocaleString('vi-VN');
+                        const tr = document.createElement('tr');
+                        
+                        const statusLabels = {
+                            'PENDING': 'Chờ duyệt',
+                            'CONFIRMED': 'Đã duyệt',
+                            'SHIPPING': 'Đang giao',
+                            'COMPLETED': 'Đã giao',
+                            'CANCELLED': 'Đã hủy'
+                        };
+
+                        tr.innerHTML = `
+                            <td><strong>#${o.id}</strong></td>
+                            <td>${o.customerName}</td>
+                            <td>${o.customerPhone}</td>
+                            <td><span style="font-weight:600;">${o.paymentMethod}</span></td>
+                            <td style="font-weight:700; color:var(--primary);">${formatPrice(o.totalAmount)}</td>
+                            <td><span class="status-badge ${o.status.toLowerCase()}">${statusLabels[o.status.toUpperCase()] || o.status}</span></td>
+                            <td style="font-size:12px; color:gray;">${dt}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+    </script>
+</body>
+</html>

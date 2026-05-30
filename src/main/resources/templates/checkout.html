@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Xác Nhận Đơn Hàng - Lani Coffee</title>
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .checkout-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 0.9fr;
+            gap: 32px;
+            padding: 120px 0 60px 0;
+        }
+        .summary-items-list {
+            max-height: 250px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            padding-right: 8px;
+        }
+        .summary-item-mini {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(78,46,30,0.06);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- FLOATING NAVIGATION BAR -->
+    <div class="navbar-wrapper">
+        <div class="container">
+            <nav class="navbar">
+                <a href="/" class="nav-brand">
+                    <i class="ri-coffe-bean-fill" style="color: var(--secondary);"></i> Lani Coffee
+                </a>
+                <ul class="nav-links">
+                    <li><a href="/" class="nav-link">Cửa hàng</a></li>
+                    <li><a href="/cart" class="nav-link">Giỏ hàng</a></li>
+                    <li><a href="/order-tracking" class="nav-link">Theo dõi đơn hàng</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <a href="/cart" class="cart-icon-wrapper">
+                        <i class="ri-shopping-bag-3-line"></i>
+                        <span class="cart-badge" id="nav-cart-badge">0</span>
+                    </a>
+                    <div id="auth-actions-box" class="nav-actions">
+                        <!-- Nạp động qua app.js -->
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- MAIN CHECKOUT CONTENT -->
+    <div class="container">
+        <div class="checkout-grid">
+            <!-- Left Panel: Customer Info Form -->
+            <div class="glass-card" style="padding: 32px; height: fit-content; animation: slide-in 0.8s ease;">
+                <h3 style="margin-bottom: 24px;"><i class="ri-truck-line"></i> Thông tin giao nhận hàng</h3>
+                
+                <form id="checkout-form" onsubmit="handlePlaceOrder(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="cust-name">Họ và tên khách hàng</label>
+                        <input type="text" id="cust-name" class="form-input" placeholder="Ví dụ: Nguyễn Văn A" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="cust-phone">Số điện thoại liên hệ</label>
+                        <input type="tel" id="cust-phone" class="form-input" placeholder="Ví dụ: 0987654321" pattern="[0-9]{10}" title="Số điện thoại phải bao gồm 10 chữ số!" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="cust-address">Địa chỉ nhận hàng (Giao hàng tận nơi)</label>
+                        <textarea id="cust-address" class="form-input" rows="3" placeholder="Số nhà, tên đường, phường/xã, quận/huyện, tỉnh thành..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Phương thức thanh toán</label>
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                            <label style="border: 1.5px solid var(--secondary); padding: 14px; border-radius: var(--radius-sm); display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; color:var(--primary);">
+                                <input type="radio" name="payment-method" value="COD" checked style="accent-color:var(--primary);">
+                                Thanh toán khi nhận hàng (COD)
+                            </label>
+                            <label style="border: 1.5px solid rgba(78,46,30,0.15); padding: 14px; border-radius: var(--radius-sm); display:flex; align-items:center; gap:8px; cursor:pointer; font-weight:600; color:rgba(78,46,30,0.6);" id="transfer-label">
+                                <input type="radio" name="payment-method" value="TRANSFER" style="accent-color:var(--primary);">
+                                Chuyển khoản ngân hàng
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="buy-now-btn" style="width:100%; height:50px; font-size:16px; margin-top:24px; gap:8px;">
+                        <i class="ri-checkbox-circle-line" style="font-size:20px;"></i> Xác nhận đặt hàng
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right Panel: Order Summary mini -->
+            <div class="glass-card" style="padding: 32px; height: fit-content; animation: slide-in 0.8s ease;">
+                <h3 style="margin-bottom: 20px; border-bottom: 2px solid var(--bg-light); padding-bottom: 12px;"><i class="ri-shopping-basket-2-line"></i> Đơn hàng đã chọn</h3>
+                
+                <div class="summary-items-list" id="mini-items-list">
+                    <!-- Nạp động qua JS -->
+                </div>
+
+                <div class="summary-row">
+                    <span style="color: rgba(78,46,30,0.6);">Tổng phụ tiền hàng</span>
+                    <span id="chk-subtotal" style="font-weight:600;">0 đ</span>
+                </div>
+
+                <div class="summary-row">
+                    <span style="color: rgba(78,46,30,0.6);">Mã giảm giá áp dụng</span>
+                    <span id="chk-discount" style="color: var(--danger); font-weight:600;">0 đ</span>
+                </div>
+
+                <div class="summary-row">
+                    <span style="color: rgba(78,46,30,0.6);">Phí giao hàng</span>
+                    <span style="color: var(--success); font-weight:600;">Miễn phí</span>
+                </div>
+
+                <div class="summary-row total" style="border-top: 1.5px dashed rgba(78,46,30,0.15); padding-top:16px; margin-top:12px; font-size:18px;">
+                    <span>Thành tiền thực tế</span>
+                    <span id="chk-total" style="font-weight:800; color:var(--primary);">0 đ</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREMIUM FOOTER -->
+    <footer style="background: var(--primary); color: var(--text-light); padding: 60px 0 30px 0; border-top: 5px solid var(--secondary); margin-top: 60px;">
+        <div class="container">
+            <div style="border-top: 1px solid rgba(247, 237, 226, 0.15); padding-top: 20px; text-align: center; font-size: 13px; color: rgba(247, 237, 226, 0.5);">
+                &copy; 2026 Lani Coffee E-Commerce Website. Thiết kế cao cấp trên nền tảng Spring Boot & SQL Server.
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        let discountVal = 0.0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Fill logged in user's phone if available
+            fetch('/api/users/me')
+                .then(res => res.json())
+                .then(user => {
+                    document.getElementById('cust-name').value = user.username || '';
+                    document.getElementById('cust-phone').value = user.phone || '';
+                })
+                .catch(() => {});
+
+            renderCheckoutSummary();
+        });
+
+        // Setup radio card borders on change
+        document.querySelectorAll('input[name="payment-method"]').forEach(r => {
+            r.addEventListener('change', (e) => {
+                document.querySelectorAll('input[name="payment-method"]').forEach(el => {
+                    const label = el.closest('label');
+                    if (el.checked) {
+                        label.style.borderColor = 'var(--secondary)';
+                        label.style.color = 'var(--primary)';
+                    } else {
+                        label.style.borderColor = 'rgba(78,46,30,0.15)';
+                        label.style.color = 'rgba(78,46,30,0.6)';
+                    }
+                });
+            });
+        });
+
+        async function renderCheckoutSummary() {
+            const cart = await getCart();
+            const list = document.getElementById('mini-items-list');
+
+            if (cart.length === 0) {
+                window.location.href = '/cart';
+                return;
+            }
+
+            list.innerHTML = '';
+            
+            cart.forEach(item => {
+                const price = item.product.salePrice || item.product.price;
+                const lineTotal = price * item.quantity;
+                const row = document.createElement('div');
+                row.className = 'summary-item-mini';
+                row.innerHTML = `
+                    <div>
+                        <strong style="color:var(--primary);">${item.product.name}</strong>
+                        <div style="font-size:11px; color:rgba(78,46,30,0.6);">Số lượng: ${item.quantity} x ${formatPrice(price)}</div>
+                    </div>
+                    <span style="font-weight:600; color:var(--primary);">${formatPrice(lineTotal)}</span>
+                `;
+                list.appendChild(row);
+            });
+
+            const subtotal = await getCartTotal();
+            
+            // Check discount amount
+            const savedDiscount = localStorage.getItem('lani_discount_amount');
+            discountVal = savedDiscount ? parseFloat(savedDiscount) : 0.0;
+
+            const total = subtotal - discountVal;
+
+            document.getElementById('chk-subtotal').innerText = formatPrice(subtotal);
+            document.getElementById('chk-discount').innerText = `- ${formatPrice(discountVal)}`;
+            document.getElementById('chk-total').innerText = formatPrice(total);
+        }
+
+        function handlePlaceOrder(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('cust-name').value;
+            const phone = document.getElementById('cust-phone').value;
+            const address = document.getElementById('cust-address').value;
+            const payment = document.querySelector('input[name="payment-method"]:checked').value;
+
+            const payload = {
+                customerName: name,
+                customerPhone: phone,
+                shippingAddress: address,
+                paymentMethod: payment,
+                discount: discountVal,
+                items: [] // Backend now fetches items directly from the DB cart
+            };
+
+            fetch('/api/orders', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (res.ok) {
+                    return res.json();
+                } else {
+                    return res.text().then(txt => { throw new Error(txt); });
+                }
+            })
+            .then(savedOrder => {
+                showToast('Đặt hàng thành công! Đang chuyển đến trang theo dõi vận chuyển...', 'success');
+                
+                // Clear state
+                clearCart();
+                localStorage.removeItem('lani_discount_percent');
+                localStorage.removeItem('lani_applied_coupon');
+                localStorage.removeItem('lani_discount_amount');
+
+                // Redirect to tracking page
+                setTimeout(() => {
+                    window.location.href = `/order-tracking?id=${savedOrder.id}`;
+                }, 2000);
+            })
+            .catch(err => {
+                // Nghiệp vụ 1: Lỗi đặt hàng quá số lượng tồn kho (400 Bad Request)
+                showToast('Lỗi đặt hàng: ' + err.message, 'error');
+                console.error(err);
+            });
+        }
+    </script>
+</body>
+</html>

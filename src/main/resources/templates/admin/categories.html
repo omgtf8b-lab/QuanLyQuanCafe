@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Danh Mục - Lani Coffee Admin</title>
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .crud-layout {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 28px;
+        }
+    </style>
+</head>
+<body style="background:#f8f9fa;">
+
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-brand">
+                <i class="ri-coffe-bean-fill"></i> Lani Admin
+            </div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item"><a href="/admin/dashboard"><i class="ri-dashboard-line"></i> Dashboard</a></li>
+                <li class="sidebar-item"><a href="/admin/products"><i class="ri-shopping-bag-line"></i> CRUD Sản phẩm</a></li>
+                <li class="sidebar-item active"><a href="/admin/categories"><i class="ri-list-check-3"></i> Danh mục</a></li>
+                <li class="sidebar-item"><a href="/admin/orders"><i class="ri-bill-line"></i> Đơn hàng trực tuyến</a></li>
+                <li class="sidebar-item"><a href="/admin/users"><i class="ri-user-settings-line"></i> Tài khoản khách</a></li>
+                <li class="sidebar-item"><a href="/admin/reviews"><i class="ri-message-3-line"></i> Duyệt bình luận</a></li>
+                <li class="sidebar-item" style="margin-top: 40px; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px;">
+                    <a href="/"><i class="ri-arrow-left-line"></i> Xem Cửa hàng</a>
+                </li>
+                <li class="sidebar-item"><a href="#" onclick="handleLogout()"><i class="ri-logout-box-line"></i> Đăng xuất</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <header class="admin-header">
+                <div>
+                    <h2 style="font-size:26px;">Quản Lý Danh Mục Sản Phẩm</h2>
+                    <p style="font-size:13px; color:rgba(78,46,30,0.6);">Thêm mới, chỉnh sửa thông tin phân loại sản phẩm đồ uống của quán.</p>
+                </div>
+            </header>
+
+            <div class="crud-layout">
+                
+                <!-- Left Panel: Categories Table -->
+                <div class="table-panel" style="margin-bottom: 0;">
+                    <div class="table-header-row">
+                        <h3 style="font-size:17px;"><i class="ri-folders-line"></i> Danh sách các phân loại chính</h3>
+                        <button onclick="resetCategoryForm()" class="nav-btn primary" style="padding:6px 14px; font-size:13px;"><i class="ri-add-line"></i> Thêm mới</button>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Mã</th>
+                                <th>Icon</th>
+                                <th>Tên danh mục</th>
+                                <th>Slug</th>
+                                <th>Mô tả tóm tắt</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-categories-tbody">
+                            <!-- Nạp động qua API -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Right Panel: Add/Edit Category Form Card -->
+                <div class="glass-card" style="padding: 28px; height: fit-content;">
+                    <h3 id="form-card-title" style="margin-bottom: 20px; border-bottom:2px solid var(--bg-light); padding-bottom:8px;"><i class="ri-add-box-line"></i> Thêm danh mục mới</h3>
+                    
+                    <form id="category-crud-form" onsubmit="handleCategorySaveSubmit(event)">
+                        <input type="hidden" id="cat-id" value="">
+
+                        <div class="form-group">
+                            <label class="form-label" for="cat-name">Tên danh mục</label>
+                            <input type="text" id="cat-name" class="form-input" placeholder="Ví dụ: Cà Phê Hạt Rang" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="cat-slug">Đường dẫn slug (để trống tự sinh)</label>
+                            <input type="text" id="cat-slug" class="form-input" placeholder="Ví dụ: ca-phe-hat-rang">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="cat-icon">Icon Class (Remix Icon)</label>
+                            <input type="text" id="cat-icon" class="form-input" placeholder="Ví dụ: ri-coffe-bean-line" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="cat-desc">Mô tả ngắn</label>
+                            <textarea id="cat-desc" class="form-input" rows="4" placeholder="Mô tả danh mục này..."></textarea>
+                        </div>
+
+                        <button type="submit" class="buy-now-btn" style="width:100%; height:46px; margin-top:20px;">
+                            <i class="ri-save-line"></i> Lưu danh mục
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verify admin authentication
+            fetch('/api/users/me')
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.json();
+                })
+                .then(user => {
+                    if ((user.role.toLowerCase() !== 'admin' && user.role.toLowerCase() !== 'staff')) {
+                        window.location.href = '/login';
+                    } else {
+                        loadAdminCategories();
+                    }
+                })
+                .catch(() => {
+                    window.location.href = '/login';
+                });
+        });
+
+        function loadAdminCategories() {
+            fetch('/api/categories')
+                .then(res => res.json())
+                .then(categories => {
+                    const tbody = document.getElementById('admin-categories-tbody');
+                    tbody.innerHTML = '';
+
+                    categories.forEach(c => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td><strong>#${c.id}</strong></td>
+                            <td><i class="${c.icon || 'ri-cup-line'}" style="font-size:20px; color:var(--secondary);"></i></td>
+                            <td><strong>${c.name}</strong></td>
+                            <td style="font-size:13px; font-family:monospace; color:gray;">${c.slug}</td>
+                            <td style="font-size:13px; max-width:180px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap;">${c.description || ''}</td>
+                            <td>
+                                <button onclick="editCategory(${c.id})" style="background:transparent; color:var(--primary-light); font-size:18px; cursor:pointer; margin-right:12px;"><i class="ri-edit-line"></i></button>
+                                <button onclick="deleteCategory(${c.id}, '${c.name.replace(/'/g, "\\'")}')" style="background:transparent; color:var(--danger); font-size:18px; cursor:pointer;"><i class="ri-delete-bin-line"></i></button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        function editCategory(id) {
+            fetch(`/api/categories/${id}`)
+                .then(res => res.json())
+                .then(c => {
+                    document.getElementById('cat-id').value = c.id;
+                    document.getElementById('cat-name').value = c.name;
+                    document.getElementById('cat-slug').value = c.slug;
+                    document.getElementById('cat-icon').value = c.icon;
+                    document.getElementById('cat-desc').value = c.description;
+
+                    document.getElementById('form-card-title').innerHTML = `<i class="ri-edit-box-line"></i> Sửa danh mục #${c.id}`;
+                    showToast('Đã lấy dữ liệu danh mục thành công!');
+                });
+        }
+
+        function deleteCategory(id, name) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa danh mục '${name}' không? Hãy đảm bảo không còn sản phẩm nào liên quan đến danh mục này.`)) {
+                return;
+            }
+
+            fetch(`/api/categories/${id}`, { method: 'DELETE' })
+                .then(res => {
+                    if (res.ok) {
+                        showToast(`Đã xóa thành công danh mục '${name}'!`);
+                        loadAdminCategories();
+                        resetCategoryForm();
+                    } else {
+                        showToast('Lỗi khi xóa danh mục, có thể vẫn còn sản phẩm đang thuộc nhóm này!', 'error');
+                    }
+                });
+        }
+
+        function resetCategoryForm() {
+            document.getElementById('cat-id').value = '';
+            document.getElementById('category-crud-form').reset();
+            document.getElementById('form-card-title').innerHTML = `<i class="ri-add-box-line"></i> Thêm danh mục mới`;
+        }
+
+        function handleCategorySaveSubmit(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('cat-id').value;
+            const name = document.getElementById('cat-name').value;
+            const slug = document.getElementById('cat-slug').value;
+            const icon = document.getElementById('cat-icon').value;
+            const desc = document.getElementById('cat-desc').value;
+
+            const payload = {
+                name: name,
+                slug: slug,
+                icon: icon,
+                description: desc
+            };
+
+            const url = id !== '' ? `/api/categories/${id}` : '/api/categories';
+            const method = id !== '' ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (res.ok) {
+                    showToast('Đã lưu danh mục thành công!');
+                    loadAdminCategories();
+                    resetCategoryForm();
+                } else {
+                    showToast('Lỗi khi lưu danh mục!', 'error');
+                }
+            })
+            .catch(err => {
+                showToast('Lỗi kết nối API!', 'error');
+            });
+        }
+    </script>
+</body>
+</html>

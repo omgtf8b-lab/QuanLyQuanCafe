@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Theo Dõi Vận Chuyển Đơn Hàng - Lani Coffee</title>
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .tracking-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 0.8fr;
+            gap: 32px;
+            margin-top: 24px;
+        }
+        .order-meta-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+            font-size: 14px;
+        }
+        .meta-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .meta-group label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: rgba(78,46,30,0.5);
+            margin-bottom: 2px;
+        }
+        .meta-group span {
+            font-weight: 600;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- FLOATING NAVIGATION BAR -->
+    <div class="navbar-wrapper">
+        <div class="container">
+            <nav class="navbar">
+                <a href="/" class="nav-brand">
+                    <i class="ri-coffe-bean-fill" style="color: var(--secondary);"></i> Lani Coffee
+                </a>
+                <ul class="nav-links">
+                    <li><a href="/" class="nav-link">Cửa hàng</a></li>
+                    <li><a href="/cart" class="nav-link">Giỏ hàng</a></li>
+                    <li><a href="/order-tracking" class="nav-link active">Theo dõi đơn hàng</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <a href="/cart" class="cart-icon-wrapper">
+                        <i class="ri-shopping-bag-3-line"></i>
+                        <span class="cart-badge" id="nav-cart-badge">0</span>
+                    </a>
+                    <div id="auth-actions-box" class="nav-actions">
+                        <!-- Nạp động qua app.js -->
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- MAIN TRACKING CONTENT -->
+    <div class="container tracking-wrapper">
+        <h2 class="section-title"><i class="ri-map-pin-line"></i> Tra Cứu & Theo Dõi Vận Chuyển</h2>
+
+        <!-- Search Bar for Order ID if not in query -->
+        <div class="glass-card" style="padding: 24px; margin-top: 32px; display: flex; gap: 16px; align-items: center; justify-content: space-between;">
+            <div>
+                <h4 style="margin-bottom: 4px;">Nhập mã đơn hàng để theo dõi</h4>
+                <p style="font-size: 13px; color: rgba(78,46,30,0.6);">Hóa đơn in trên email hoặc khi xác nhận đặt hàng thành công.</p>
+            </div>
+            <div style="display:flex; gap:8px; width: 350px;">
+                <input type="number" id="order-id-input" class="form-input" placeholder="Mã đơn hàng (Ví dụ: 1)" style="background:var(--bg-light);">
+                <button onclick="handleSearchOrder()" class="nav-btn primary" style="padding:0 24px; font-size:14px; white-space:nowrap;"><i class="ri-search-line"></i> Tra cứu</button>
+            </div>
+        </div>
+
+        <!-- Tracking details layout (initially hidden) -->
+        <div id="tracking-details-panel" style="display:none; animation: fade-in 0.8s ease;">
+            
+            <!-- Dynamic Progress Timeline -->
+            <div class="glass-card" style="padding: 32px 24px; margin-top: 24px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid #e9ecef; padding-bottom:16px;">
+                    <h3>Đơn hàng #<span id="order-id-title">0</span></h3>
+                    <span id="order-status-badge" class="status-badge pending">Đang kiểm tra...</span>
+                </div>
+
+                <div class="timeline" id="order-timeline-box">
+                    <div class="timeline-progress" id="order-timeline-progress" style="width: 0%;"></div>
+                    
+                    <div class="timeline-step" id="step-pending">
+                        <div class="step-node">1</div>
+                        <div class="step-label">Chờ xác nhận</div>
+                    </div>
+                    
+                    <div class="timeline-step" id="step-confirmed">
+                        <div class="step-node">2</div>
+                        <div class="step-label">Đã xác nhận</div>
+                    </div>
+                    
+                    <div class="timeline-step" id="step-shipping">
+                        <div class="step-node">3</div>
+                        <div class="step-label">Đang giao hàng</div>
+                    </div>
+                    
+                    <div class="timeline-step" id="step-completed">
+                        <div class="step-node">4</div>
+                        <div class="step-label">Đã hoàn thành</div>
+                    </div>
+                </div>
+
+                <!-- Cancel Notification / Alert box -->
+                <div id="cancel-box" style="text-align: center; border-top: 1px solid #e9ecef; padding-top: 24px;">
+                    <!-- Nút Hủy đơn hoặc cảnh báo nạp qua JS -->
+                </div>
+            </div>
+
+            <!-- Two Column Details -->
+            <div class="tracking-grid">
+                <!-- Customer Details -->
+                <div class="glass-card" style="padding: 32px;">
+                    <h3 style="margin-bottom: 20px; border-bottom: 2px solid var(--bg-light); padding-bottom:12px;"><i class="ri-user-line"></i> Thông tin khách hàng</h3>
+                    
+                    <div class="order-meta-info">
+                        <div class="meta-group">
+                            <label>Họ và tên nhận hàng</label>
+                            <span id="order-cust-name">Nguyễn Văn A</span>
+                        </div>
+                        <div class="meta-group">
+                            <label>Số điện thoại</label>
+                            <span id="order-cust-phone">0987654321</span>
+                        </div>
+                        <div class="meta-group" style="grid-column: 1/-1;">
+                            <label>Địa chỉ nhận hàng</label>
+                            <span id="order-cust-address">Địa chỉ cụ thể</span>
+                        </div>
+                        <div class="meta-group">
+                            <label>Phương thức thanh toán</label>
+                            <span id="order-payment-method">Thanh toán khi nhận hàng (COD)</span>
+                        </div>
+                        <div class="meta-group">
+                            <label>Thời điểm đặt hàng</label>
+                            <span id="order-created-date">Đang kiểm tra...</span>
+                        </div>
+                        <div class="meta-group" id="completed-time-box" style="display:none;">
+                            <label>Thời điểm giao hàng thành công</label>
+                            <span id="order-completed-date" style="color:var(--success);">Đang kiểm tra...</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Products in Order -->
+                <div class="glass-card" style="padding: 32px; height: fit-content;">
+                    <h3 style="margin-bottom: 20px; border-bottom: 2px solid var(--bg-light); padding-bottom:12px;"><i class="ri-file-list-3-line"></i> Chi tiết giỏ hàng đặt mua</h3>
+                    
+                    <div id="order-items-mini-list" style="margin-bottom: 20px;">
+                        <!-- Nạp qua JS -->
+                    </div>
+
+                    <div class="summary-row">
+                        <span style="color: rgba(78,46,30,0.6);">Tổng phụ tiền hàng</span>
+                        <span id="order-subtotal" style="font-weight:600;">0 đ</span>
+                    </div>
+
+                    <div class="summary-row">
+                        <span style="color: rgba(78,46,30,0.6);">Mã giảm giá đã áp</span>
+                        <span id="order-discount" style="color: var(--danger); font-weight:600;">0 đ</span>
+                    </div>
+
+                    <div class="summary-row total" style="border-top:1.5px dashed rgba(78,46,30,0.15); padding-top:12px; margin-top:12px;">
+                        <span>Tổng số tiền đã trả</span>
+                        <span id="order-total" style="font-weight:800; color:var(--primary);">0 đ</span>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- PREMIUM FOOTER -->
+    <footer style="background: var(--primary); color: var(--text-light); padding: 60px 0 30px 0; border-top: 5px solid var(--secondary); margin-top: 60px;">
+        <div class="container">
+            <div style="border-top: 1px solid rgba(247, 237, 226, 0.15); padding-top: 20px; text-align: center; font-size: 13px; color: rgba(247, 237, 226, 0.5);">
+                &copy; 2026 Lani Coffee E-Commerce Website. Thiết kế cao cấp trên nền tảng Spring Boot & SQL Server.
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const orderId = urlParams.get('id');
+            
+            if (orderId) {
+                document.getElementById('order-id-input').value = orderId;
+                fetchOrderDetails(orderId);
+            }
+        });
+
+        function handleSearchOrder() {
+            const id = document.getElementById('order-id-input').value;
+            if (id.trim() === '') {
+                showToast('Vui lòng nhập mã đơn hàng!', 'warning');
+                return;
+            }
+            window.location.href = `/order-tracking?id=${id}`;
+        }
+
+        function fetchOrderDetails(id) {
+            fetch(`/api/orders/${id}`)
+                .then(res => {
+                    if (res.status === 404) {
+                        throw new Error('Mã đơn hàng này không tồn tại trong hệ thống!');
+                    }
+                    if (!res.ok) throw new Error('Có lỗi xảy ra khi truy vấn dữ liệu.');
+                    return res.json();
+                })
+                .then(data => {
+                    const order = data.order;
+                    const items = data.items;
+
+                    // Show details panel
+                    document.getElementById('tracking-details-panel').style.display = 'block';
+
+                    // Update simple fields
+                    document.getElementById('order-id-title').innerText = order.id;
+                    document.getElementById('order-cust-name').innerText = order.customerName;
+                    document.getElementById('order-cust-phone').innerText = order.customerPhone;
+                    document.getElementById('order-cust-address').innerText = order.shippingAddress;
+                    document.getElementById('order-payment-method').innerText = order.paymentMethod === 'COD' ? 'Thanh toán khi nhận hàng (COD)' : 'Chuyển khoản ngân hàng';
+                    
+                    const dt = new Date(order.createdAt).toLocaleString('vi-VN');
+                    document.getElementById('order-created-date').innerText = dt;
+
+                    // Completed Time if COMPLETED
+                    if (order.completedAt) {
+                        const compDt = new Date(order.completedAt).toLocaleString('vi-VN');
+                        document.getElementById('order-completed-date').innerText = compDt;
+                        document.getElementById('completed-time-box').style.display = 'flex';
+                    } else {
+                        document.getElementById('completed-time-box').style.display = 'none';
+                    }
+
+                    // Price details
+                    document.getElementById('order-subtotal').innerText = formatPrice(order.subtotal);
+                    document.getElementById('order-discount').innerText = `- ${formatPrice(order.discount)}`;
+                    document.getElementById('order-total').innerText = formatPrice(order.totalAmount);
+
+                    // Status Badge
+                    const badge = document.getElementById('order-status-badge');
+                    badge.className = `status-badge ${order.status.toLowerCase()}`;
+                    
+                    const statusLabels = {
+                        'PENDING': 'Chờ xác nhận',
+                        'CONFIRMED': 'Đã xác nhận',
+                        'SHIPPING': 'Đang giao hàng',
+                        'COMPLETED': 'Đã hoàn thành',
+                        'CANCELLED': 'Đã hủy đơn'
+                    };
+                    badge.innerText = statusLabels[order.status.toUpperCase()] || order.status;
+
+                    // Timeline updates
+                    updateTimelineUI(order.status.toUpperCase());
+
+                    // Cancel Order button/actions based on business logic
+                    const cancelBox = document.getElementById('cancel-box');
+                    cancelBox.innerHTML = '';
+                    
+                    if (order.status.toUpperCase() === 'PENDING') {
+                        cancelBox.innerHTML = `
+                            <button onclick="handleCancelOrder(${order.id})" class="nav-btn outline" style="border-color:var(--danger); color:var(--danger); padding:10px 24px;">
+                                <i class="ri-close-circle-line"></i> Yêu cầu hủy đơn hàng
+                            </button>
+                            <p style="font-size:12px; color:rgba(78,46,30,0.5); margin-top:8px;">* Chỉ có thể hủy đơn hàng trực tuyến khi trạng thái đơn ở mức Chờ xác nhận.</p>
+                        `;
+                    } else if (order.status.toUpperCase() === 'CONFIRMED' || order.status.toUpperCase() === 'SHIPPING') {
+                        // Nghiệp vụ 2: Chặn hủy đơn khi đã duyệt/vận chuyển
+                        cancelBox.innerHTML = `
+                            <div style="background:rgba(202,103,2,0.08); padding:12px; border-radius:var(--radius-sm); border:1.5px solid var(--warning); display:inline-flex; align-items:center; gap:8px;">
+                                <i class="ri-error-warning-line" style="color:var(--warning); font-size:18px;"></i>
+                                <span style="font-size:13px; font-weight:600; color:var(--warning);">Đơn hàng đã được duyệt và đang chuẩn bị giao. Bạn không thể tự hủy đơn hàng trực tuyến!</span>
+                            </div>
+                        `;
+                    } else if (order.status.toUpperCase() === 'COMPLETED') {
+                        cancelBox.innerHTML = `
+                            <div style="background:rgba(45,106,79,0.08); padding:12px; border-radius:var(--radius-sm); border:1.5px solid var(--success); display:inline-flex; align-items:center; gap:8px;">
+                                <i class="ri-checkbox-circle-line" style="color:var(--success); font-size:18px;"></i>
+                                <span style="font-size:13px; font-weight:600; color:var(--success);">Cảm ơn bạn đã mua hàng tại Lani Coffee! Đơn hàng đã giao thành công.</span>
+                            </div>
+                        `;
+                    } else if (order.status.toUpperCase() === 'CANCELLED') {
+                        cancelBox.innerHTML = `
+                            <div style="background:rgba(155,34,38,0.08); padding:12px; border-radius:var(--radius-sm); border:1.5px solid var(--danger); display:inline-flex; align-items:center; gap:8px;">
+                                <i class="ri-close-circle-line" style="color:var(--danger); font-size:18px;"></i>
+                                <span style="font-size:13px; font-weight:600; color:var(--danger);">Đơn hàng này đã bị hủy bỏ! Tồn kho vật lý đã được hoàn lại đầy đủ.</span>
+                            </div>
+                        `;
+                    }
+
+                    // Mini items list
+                    const itemsList = document.getElementById('order-items-mini-list');
+                    itemsList.innerHTML = '';
+                    items.forEach(item => {
+                        const div = document.createElement('div');
+                        div.className = 'summary-item-mini';
+                        div.innerHTML = `
+                            <div>
+                                <strong style="color:var(--primary);">${item.name}</strong>
+                                <div style="font-size:11px; color:rgba(78,46,30,0.6);">Số lượng: ${item.quantity} x ${formatPrice(item.price)}</div>
+                            </div>
+                            <span style="font-weight:600; color:var(--primary);">${formatPrice(item.price * item.quantity)}</span>
+                        `;
+                        itemsList.appendChild(div);
+                    });
+
+                })
+                .catch(err => {
+                    document.getElementById('tracking-details-panel').style.display = 'none';
+                    showToast(err.message, 'error');
+                });
+        }
+
+        function updateTimelineUI(status) {
+            // Reset timeline classes
+            const steps = ['pending', 'confirmed', 'shipping', 'completed'];
+            steps.forEach(s => {
+                document.getElementById(`step-${s}`).className = 'timeline-step';
+            });
+
+            const progress = document.getElementById('order-timeline-progress');
+
+            if (status === 'CANCELLED') {
+                progress.style.width = '0%';
+                // Simple warning layout
+                return;
+            }
+
+            if (status === 'PENDING') {
+                document.getElementById('step-pending').classList.add('active');
+                progress.style.width = '0%';
+            } else if (status === 'CONFIRMED') {
+                document.getElementById('step-pending').classList.add('completed');
+                document.getElementById('step-confirmed').classList.add('active');
+                progress.style.width = '33%';
+            } else if (status === 'SHIPPING') {
+                document.getElementById('step-pending').classList.add('completed');
+                document.getElementById('step-confirmed').classList.add('completed');
+                document.getElementById('step-shipping').classList.add('active');
+                progress.style.width = '66%';
+            } else if (status === 'COMPLETED') {
+                document.getElementById('step-pending').classList.add('completed');
+                document.getElementById('step-confirmed').classList.add('completed');
+                document.getElementById('step-shipping').classList.add('completed');
+                document.getElementById('step-completed').classList.add('completed');
+                progress.style.width = '100%';
+            }
+        }
+
+        // Hủy đơn hàng trực tuyến
+        function handleCancelOrder(id) {
+            if (!confirm('Bạn có chắc chắn muốn hủy đơn hàng trực tuyến này không? Hệ thống sẽ hoàn lại số lượng tồn kho sản phẩm.')) {
+                return;
+            }
+
+            fetch(`/api/orders/${id}/status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'CANCELLED' })
+            })
+            .then(res => {
+                if (res.ok) {
+                    showToast('Đã hủy đơn hàng trực tuyến và hoàn tồn kho thành công!');
+                    fetchOrderDetails(id); // Reload details
+                } else {
+                    return res.text().then(txt => { throw new Error(txt); });
+                }
+            })
+            .catch(err => {
+                // Nghiệp vụ 2: Báo lỗi nếu cố tình hủy khi không ở PENDING
+                showToast(err.message, 'error');
+            });
+        }
+    </script>
+</body>
+</html>

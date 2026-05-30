@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lani Coffee - Website Quản Lý Quán Cà Phê Chuyên Nghiệp</title>
+    <meta name="description" content="Hệ thống quản lý thực đơn, đặt món tại quầy, giao hàng và theo dõi doanh thu chuyên nghiệp dành cho Lani Coffee.">
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <!-- Master CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- FLOATING NAVIGATION BAR -->
+    <div class="navbar-wrapper">
+        <div class="container">
+            <nav class="navbar">
+                <a href="/" class="nav-brand">
+                    <i class="ri-coffe-bean-fill" style="color: var(--secondary);"></i> Lani Coffee
+                </a>
+                <ul class="nav-links">
+                    <li><a href="/" class="nav-link active">Thực đơn</a></li>
+                    <li><a href="/cart" class="nav-link">Giỏ hàng</a></li>
+                    <li><a href="/order-tracking" class="nav-link">Theo dõi đơn hàng</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <a href="/cart" class="cart-icon-wrapper">
+                        <i class="ri-shopping-bag-3-line"></i>
+                        <span class="cart-badge" id="nav-cart-badge">0</span>
+                    </a>
+                    <div id="auth-actions-box" class="nav-actions">
+                        <!-- Nạp động qua app.js -->
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- HERO HEADER SECTION -->
+    <header class="hero">
+        <div class="container">
+            <div class="hero-grid">
+                <div style="animation: slide-in 0.8s ease;">
+                    <span class="hero-subtitle">Lani Coffee Management System</span>
+                    <h1 class="hero-title">Hệ Thống Quản Lý <br><span>Quán Cà Phê Chuyên Nghiệp</span></h1>
+                    <p class="hero-desc">Hệ thống hỗ trợ đắc lực cho việc quản lý thực đơn sản phẩm, danh mục món nước, thông tin khách hàng, nhân viên và doanh thu bán hàng hàng ngày tại quầy hoặc giao đi.</p>
+                    <div class="hero-actions">
+                        <button onclick="scrollToProducts()" class="nav-btn primary" style="padding: 14px 28px; font-size: 15px;"><i class="ri-shopping-basket-line"></i> Xem thực đơn</button>
+                        <a href="/order-tracking" class="nav-btn outline" style="padding: 14px 28px; font-size: 15px; display: inline-flex; align-items: center; gap: 8px;"><i class="ri-map-pin-line"></i> Tra cứu đơn hàng</a>
+                    </div>
+                </div>
+                <div class="hero-img-box" style="animation: fade-in 1.2s ease;">
+                    <div class="hero-circle-bg"></div>
+                    <img src="/images/hero-bag.png" alt="Lani Coffee Premium Pack" class="hero-img" onerror="handleImgError(this)">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- SEARCH & CATEGORY FILTERS BAR -->
+    <section class="filters-section" id="shop-section">
+        <div class="container">
+            <div class="filters-wrapper">
+                <div class="categories-pills" id="category-pills-box">
+                    <button class="category-pill active" onclick="filterCategory(null, this)">Tất cả sản phẩm</button>
+                    <!-- Danh mục nạp động qua API -->
+                </div>
+                <div class="search-filter-box">
+                    <div class="search-input-wrapper">
+                        <i class="ri-search-line search-icon"></i>
+                        <input type="text" id="product-search" class="search-input" placeholder="Tìm kiếm cà phê, dụng cụ..." oninput="handleSearch(this.value)">
+                    </div>
+                    <select id="sort-select" class="sort-select" onchange="handleSort(this.value)">
+                        <option value="default">Sắp xếp mặc định</option>
+                        <option value="price-asc">Giá tăng dần</option>
+                        <option value="price-desc">Giá giảm dần</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- PRODUCTS MAIN SECTION -->
+    <main class="products-section">
+        <div class="container">
+            <div class="section-header">
+                <div>
+                    <h3 class="section-title">Danh Sách Sản Phẩm</h3>
+                </div>
+                <p style="font-size: 14px; color: rgba(78, 46, 30, 0.6); font-weight: 500;" id="products-count">Đang tải...</p>
+            </div>
+            
+            <div class="products-grid" id="products-grid-box">
+                <!-- Danh sách sản phẩm nạp động qua API -->
+            </div>
+        </div>
+    </main>
+
+    <!-- PREMIUM FOOTER -->
+    <footer style="background: var(--primary); color: var(--text-light); padding: 60px 0 30px 0; border-top: 5px solid var(--secondary);">
+        <div class="container">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 40px; margin-bottom: 40px;">
+                <div>
+                    <h4 style="color: var(--accent); font-size: 20px; margin-bottom: 16px;"><i class="ri-coffe-bean-fill"></i> Lani Coffee</h4>
+                    <p style="font-size: 14px; color: rgba(247, 237, 226, 0.7);">Chuyên cung cấp các loại đồ uống cà phê, trà chuẩn vị truyền thống và phong cách hiện đại.</p>
+                </div>
+                <div>
+                    <h4 style="color: var(--accent); font-size: 16px; margin-bottom: 16px;">Liên kết nhanh</h4>
+                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: rgba(247, 237, 226, 0.7);">
+                        <li><a href="/" style="hover:color: white;">Cửa hàng</a></li>
+                        <li><a href="/cart" style="hover:color: white;">Giỏ hàng</a></li>
+                        <li><a href="/order-tracking" style="hover:color: white;">Đơn hàng của tôi</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 style="color: var(--accent); font-size: 16px; margin-bottom: 16px;">Địa chỉ liên hệ</h4>
+                    <ul style="list-style: none; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: rgba(247, 237, 226, 0.7);">
+                        <li><i class="ri-map-pin-line"></i> Dalat City, Lam Dong Province</li>
+                        <li><i class="ri-mail-line"></i> info@lanicoffee.vn</li>
+                        <li><i class="ri-phone-line"></i> 1900 1234</li>
+                    </ul>
+                </div>
+            </div>
+            <div style="border-top: 1px solid rgba(247, 237, 226, 0.15); padding-top: 20px; text-align: center; font-size: 13px; color: rgba(247, 237, 226, 0.5);">
+                &copy; 2026 Lani Coffee E-Commerce Website. Thiết kế cao cấp trên nền tảng Spring Boot & SQL Server.
+            </div>
+        </div>
+    </footer>
+
+    <!-- QUICK VIEW MODAL -->
+    <div id="quick-view-modal" class="modal-overlay" onclick="closeQuickView(event)">
+        <div class="modal-card quick-view-card animate-scale" onclick="event.stopPropagation()">
+            <button class="close-modal-btn" onclick="closeQuickView(null)">
+                <i class="ri-close-line"></i>
+            </button>
+            <div class="quick-view-grid">
+                <div class="qv-image-box">
+                    <img id="qv-img" src="" alt="Product Image" onerror="handleImgError(this)">
+                </div>
+                <div class="qv-info-box">
+                    <span id="qv-brand" class="product-brand"></span>
+                    <h3 id="qv-name" class="qv-title"></h3>
+                    <div class="qv-price-box">
+                        <span id="qv-current-price" class="current-price" style="font-size: 24px;"></span>
+                        <span id="qv-old-price" class="old-price" style="font-size: 16px; margin-left: 8px;"></span>
+                    </div>
+                    <p id="qv-desc" class="qv-description"></p>
+                    <div class="qv-meta">
+                        <div class="qv-meta-item">
+                            <span class="label">Tình trạng:</span>
+                            <span id="qv-stock-badge" class="badge"></span>
+                        </div>
+                    </div>
+                    <div class="qv-actions">
+                        <div class="quantity-input-box">
+                            <button onclick="changeQvQty(-1)" class="qty-btn"><i class="ri-subtract-line"></i></button>
+                            <input type="number" id="qv-qty-input" value="1" min="1" readonly>
+                            <button onclick="changeQvQty(1)" class="qty-btn"><i class="ri-add-line"></i></button>
+                        </div>
+                        <button id="qv-add-cart-btn" class="nav-btn primary" style="flex: 1;">
+                            <i class="ri-shopping-cart-2-line"></i> Thêm vào giỏ
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        let allProducts = [];
+        let filteredProducts = [];
+        let activeCategoryId = null;
+        let searchQuery = '';
+        let currentQvProduct = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchCategories();
+            fetchProducts();
+        });
+
+        function scrollToProducts() {
+            document.getElementById('shop-section').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // Fetch Categories
+        function fetchCategories() {
+            fetch('/api/categories')
+                .then(res => res.json())
+                .then(categories => {
+                    const box = document.getElementById('category-pills-box');
+                    categories.forEach(cat => {
+                        const btn = document.createElement('button');
+                        btn.className = 'category-pill';
+                        btn.innerHTML = `<i class="${cat.icon || 'ri-cup-line'}"></i> ${cat.name}`;
+                        btn.onclick = (e) => filterCategory(cat.id, btn);
+                        box.appendChild(btn);
+                    });
+                })
+                .catch(err => console.error("Lỗi tải danh mục:", err));
+        }
+
+        // Fetch Products
+        function fetchProducts() {
+            fetch('/api/products')
+                .then(res => res.json())
+                .then(products => {
+                    allProducts = products;
+                    filteredProducts = [...products];
+                    renderProducts();
+                })
+                .catch(err => {
+                    document.getElementById('products-count').innerText = "Lỗi kết nối máy chủ!";
+                    console.error("Lỗi tải sản phẩm:", err);
+                });
+        }
+
+        // Render Products
+        function renderProducts() {
+            const grid = document.getElementById('products-grid-box');
+            grid.innerHTML = '';
+            
+            // Lọc theo Danh mục
+            let list = filteredProducts;
+            if (activeCategoryId) {
+                list = list.filter(p => p.categoryId === activeCategoryId);
+            }
+            
+            // Lọc theo Tìm kiếm
+            if (searchQuery.trim() !== '') {
+                const q = searchQuery.toLowerCase();
+                list = list.filter(p => p.name.toLowerCase().includes(q) || (p.brand && p.brand.toLowerCase().includes(q)));
+            }
+
+            document.getElementById('products-count').innerText = `Hiển thị ${list.length} sản phẩm`;
+
+            if (list.length === 0) {
+                grid.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 60px 0;">
+                        <i class="ri-search-eye-line" style="font-size: 48px; color: var(--secondary);"></i>
+                        <p style="margin-top: 16px; font-weight: 500; color: rgba(78,46,30,0.6);">Không tìm thấy sản phẩm nào phù hợp!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.forEach(p => {
+                const isSale = p.salePrice !== null && p.salePrice < p.price;
+                const hasStock = p.stock > 0 && p.available;
+
+                let badgeHtml = '';
+                if (!hasStock) {
+                    badgeHtml = `<span class="card-badge out-of-stock">Hết hàng</span>`;
+                } else if (isSale) {
+                    const discount = Math.round(((p.price - p.salePrice) / p.price) * 100);
+                    badgeHtml = `<span class="card-badge sale">Giảm ${discount}%</span>`;
+                }
+
+                let priceHtml = '';
+                if (isSale) {
+                    priceHtml = `
+                        <span class="current-price">${formatPrice(p.salePrice)}</span>
+                        <span class="old-price">${formatPrice(p.price)}</span>
+                    `;
+                } else {
+                    priceHtml = `<span class="current-price">${formatPrice(p.price)}</span>`;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.innerHTML = `
+                    ${badgeHtml}
+                    <div class="product-img-wrapper">
+                        <img src="${p.imageUrl || '/uploads/default.png'}" alt="${p.name}" class="product-card-img" onerror="handleImgError(this)" onclick="openQuickView(${p.id})">
+                        <div class="quick-view-hover" onclick="openQuickView(${p.id})">
+                            <i class="ri-eye-line"></i> Xem nhanh
+                        </div>
+                    </div>
+                    <span class="product-brand">${p.brand || 'Lani Premium'}</span>
+                    <h4 class="product-title"><a href="/product/${p.id}">${p.name}</a></h4>
+                    <p class="product-card-desc">${p.description || ''}</p>
+                    <div class="product-price-row">
+                        <div class="price-box">
+                            <span class="price-label">Giá bán trực tuyến</span>
+                            <div>${priceHtml}</div>
+                        </div>
+                        <button onclick="handleAddToCartClick(${p.id}, '${p.name.replace(/'/g, "\\'")}', ${p.salePrice || p.price}, '${p.imageUrl}', ${hasStock})" 
+                                class="add-cart-btn ${!hasStock ? 'disabled' : ''}" ${!hasStock ? 'disabled' : ''}>
+                            <i class="ri-shopping-cart-2-line"></i>
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Filter Category
+        function filterCategory(catId, btn) {
+            activeCategoryId = catId;
+            
+            // Update active pill
+            document.querySelectorAll('.category-pill').forEach(pill => {
+                pill.classList.remove('active');
+            });
+            btn.classList.add('active');
+
+            renderProducts();
+        }
+
+        // Search Action
+        function handleSearch(val) {
+            searchQuery = val;
+            renderProducts();
+        }
+
+        // Sort Action
+        function handleSort(val) {
+            if (val === 'price-asc') {
+                filteredProducts.sort((a, b) => (a.salePrice || a.price) - (b.salePrice || b.price));
+            } else if (val === 'price-desc') {
+                filteredProducts.sort((a, b) => (b.salePrice || b.price) - (a.salePrice || a.price));
+            } else {
+                filteredProducts = [...allProducts];
+            }
+            renderProducts();
+        }
+
+        // Handle Add to Cart
+        function handleAddToCartClick(id, name, price, img, hasStock) {
+            if (!hasStock) return;
+            addToCart(id, name, price, img, 1);
+        }
+
+        // Quick View Functions
+        function openQuickView(id) {
+            fetch(`/api/products/${id}`)
+                .then(res => res.json())
+                .then(p => {
+                    currentQvProduct = p;
+                    document.getElementById('qv-img').src = p.imageUrl || '/uploads/default.png';
+                    document.getElementById('qv-brand').innerText = p.brand || 'Lani Premium';
+                    document.getElementById('qv-name').innerText = p.name;
+                    document.getElementById('qv-desc').innerText = p.description || 'Chưa có mô tả chi tiết.';
+                    
+                    const isSale = p.salePrice !== null && p.salePrice < p.price;
+                    if (isSale) {
+                        document.getElementById('qv-current-price').innerText = formatPrice(p.salePrice);
+                        document.getElementById('qv-old-price').innerText = formatPrice(p.price);
+                        document.getElementById('qv-old-price').style.display = 'inline-block';
+                    } else {
+                        document.getElementById('qv-current-price').innerText = formatPrice(p.price);
+                        document.getElementById('qv-old-price').style.display = 'none';
+                    }
+
+                    const badge = document.getElementById('qv-stock-badge');
+                    const hasStock = p.stock > 0 && p.available;
+                    const addBtn = document.getElementById('qv-add-cart-btn');
+                    
+                    if (hasStock) {
+                        badge.className = 'badge success';
+                        badge.innerText = `Còn hàng (${p.stock} sản phẩm)`;
+                        addBtn.disabled = false;
+                        addBtn.className = 'nav-btn primary';
+                        addBtn.onclick = () => {
+                            const qty = parseInt(document.getElementById('qv-qty-input').value) || 1;
+                            addToCart(p.id, p.name, p.salePrice || p.price, p.imageUrl, qty);
+                            closeQuickView(null);
+                        };
+                    } else {
+                        badge.className = 'badge danger';
+                        badge.innerText = 'Hết hàng';
+                        addBtn.disabled = true;
+                        addBtn.className = 'nav-btn disabled';
+                    }
+
+                    document.getElementById('qv-qty-input').value = 1;
+                    document.getElementById('quick-view-modal').classList.add('active');
+                })
+                .catch(err => {
+                    console.error("Lỗi lấy thông tin xem nhanh sản phẩm:", err);
+                    showToast("Không thể tải thông tin sản phẩm!", "danger");
+                });
+        }
+
+        function closeQuickView(event) {
+            if (event && event.target !== document.getElementById('quick-view-modal')) return;
+            document.getElementById('quick-view-modal').classList.remove('active');
+            currentQvProduct = null;
+        }
+
+        function changeQvQty(dir) {
+            const input = document.getElementById('qv-qty-input');
+            let val = parseInt(input.value) || 1;
+            val += dir;
+            if (val < 1) val = 1;
+            if (currentQvProduct && val > currentQvProduct.stock) {
+                val = currentQvProduct.stock;
+                showToast(`Chỉ còn ${currentQvProduct.stock} sản phẩm trong kho!`, "warning");
+            }
+            input.value = val;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Khuyến Mãi - Lani Admin</title>
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .coupon-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .form-group label {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+        .form-group input, .form-group select {
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            border: 1.5px solid rgba(78, 46, 30, 0.15);
+            background: var(--bg-light);
+            font-size: 14px;
+            transition: var(--transition);
+        }
+        .form-group input:focus, .form-group select:focus {
+            border-color: var(--secondary);
+            background: white;
+        }
+    </style>
+</head>
+<body style="background:#f8f9fa;">
+
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-brand">
+                <i class="ri-coffe-bean-fill"></i> Lani Admin
+            </div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item"><a href="/admin/dashboard"><i class="ri-dashboard-line"></i> Dashboard</a></li>
+                <li class="sidebar-item"><a href="/admin/products"><i class="ri-shopping-bag-line"></i> CRUD Sản phẩm</a></li>
+                <li class="sidebar-item"><a href="/admin/categories"><i class="ri-list-check-3"></i> Danh mục</a></li>
+                <li class="sidebar-item"><a href="/admin/orders"><i class="ri-bill-line"></i> Đơn hàng trực tuyến</a></li>
+                <li class="sidebar-item active"><a href="/admin/coupons"><i class="ri-coupon-2-line"></i> Quản lý Khuyến mãi</a></li>
+                <li class="sidebar-item"><a href="/admin/users"><i class="ri-user-settings-line"></i> Tài khoản khách</a></li>
+                <li class="sidebar-item"><a href="/admin/reviews"><i class="ri-message-3-line"></i> Duyệt bình luận</a></li>
+                <li class="sidebar-item" style="margin-top: 40px; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px;">
+                    <a href="/"><i class="ri-arrow-left-line"></i> Xem Cửa hàng</a>
+                </li>
+                <li class="sidebar-item"><a href="#" onclick="handleLogout()"><i class="ri-logout-box-line"></i> Đăng xuất</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <header class="admin-header">
+                <div>
+                    <h2 style="font-size:26px;">Quản Lý Chương Trình Khuyến Mãi (Coupons)</h2>
+                    <p style="font-size:13px; color:rgba(78,46,30,0.6);">Thiết lập mã giảm giá, mức chiết khấu phần trăm hoặc tiền mặt trực tiếp.</p>
+                </div>
+            </header>
+
+            <!-- CRUD Form Panel -->
+            <div class="table-panel" style="padding: 24px;">
+                <h3 style="font-size:18px; margin-bottom: 20px;" id="form-title"><i class="ri-coupon-2-line"></i> Thêm Mã Giảm Giá Mới</h3>
+                <form id="coupon-form" onsubmit="handleSaveCoupon(event)">
+                    <input type="hidden" id="coupon-id">
+                    <div class="coupon-form-grid">
+                        <div class="form-group">
+                            <label for="coupon-code">Mã giảm giá (Code)</label>
+                            <input type="text" id="coupon-code" placeholder="Ví dụ: LANINEW" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="coupon-type">Loại chiết khấu</label>
+                            <select id="coupon-type" required>
+                                <option value="PERCENTAGE">Phần trăm (%)</option>
+                                <option value="FIXED_AMOUNT">Số tiền cố định (đ)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="coupon-val">Mức giảm</label>
+                            <input type="number" id="coupon-val" placeholder="Ví dụ: 15 hoặc 50000" min="1" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="coupon-min-order">Đơn tối thiểu (đ)</label>
+                            <input type="number" id="coupon-min-order" placeholder="Ví dụ: 200000" min="0" value="0">
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 12px; justify-content: flex-end;">
+                        <button type="button" onclick="resetCouponForm()" class="nav-btn outline" style="padding: 10px 24px;">Hủy</button>
+                        <button type="submit" class="nav-btn primary" style="padding: 10px 24px;">Lưu Khuyến Mãi</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- List Data Panel -->
+            <div class="table-panel">
+                <div class="table-header-row">
+                    <h3 style="font-size:18px;"><i class="ri-list-unordered"></i> Danh sách mã giảm giá đang hoạt động</h3>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Mã code</th>
+                            <th>Loại áp dụng</th>
+                            <th>Mức giảm</th>
+                            <th>Đơn hàng tối thiểu</th>
+                            <th>Trạng thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="coupons-tbody">
+                        <!-- Load động qua JS -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verify admin authentication
+            fetch('/api/users/me')
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.json();
+                })
+                .then(user => {
+                    if ((user.role.toLowerCase() !== 'admin' && user.role.toLowerCase() !== 'staff')) {
+                        window.location.href = '/login';
+                    } else {
+                        loadCoupons();
+                    }
+                })
+                .catch(() => {
+                    window.location.href = '/login';
+                });
+        });
+
+        function loadCoupons() {
+            fetch('/api/coupons')
+                .then(res => res.json())
+                .then(coupons => {
+                    const tbody = document.getElementById('coupons-tbody');
+                    tbody.innerHTML = '';
+
+                    if (coupons.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="6" style="text-align:center; padding:30px; color:rgba(78,46,30,0.6);">Chưa có mã giảm giá nào được tạo!</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    coupons.forEach(c => {
+                        const tr = document.createElement('tr');
+                        const minOrderText = c.minOrderValue && c.minOrderValue > 0 ? formatPrice(c.minOrderValue) : 'Không yêu cầu';
+                        const discountText = c.type === 'PERCENTAGE' ? `${c.discountValue}%` : formatPrice(c.discountValue);
+                        const typeText = c.type === 'PERCENTAGE' ? 'Giảm phần trăm' : 'Giảm tiền mặt';
+                        
+                        tr.innerHTML = `
+                            <td><strong style="color:var(--secondary); font-size:16px;">${c.code}</strong></td>
+                            <td>${typeText}</td>
+                            <td style="font-weight:700;">${discountText}</td>
+                            <td>${minOrderText}</td>
+                            <td>
+                                <span class="status-badge ${c.active ? 'completed' : 'cancelled'}">
+                                    ${c.active ? 'Đang chạy' : 'Đã dừng'}
+                                </span>
+                            </td>
+                            <td>
+                                <div style="display:flex; gap:8px;">
+                                    <button onclick='editCoupon(${JSON.stringify(c)})' class="nav-btn outline" style="padding:6px 12px; font-size:12px;"><i class="ri-edit-line"></i> Sửa</button>
+                                    <button onclick="deleteCoupon(${c.id})" class="nav-btn outline" style="padding:6px 12px; font-size:12px; color:var(--danger); border-color:var(--danger);"><i class="ri-delete-bin-line"></i> Xóa</button>
+                                </div>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        function handleSaveCoupon(event) {
+            event.preventDefault();
+            
+            const id = document.getElementById('coupon-id').value;
+            const code = document.getElementById('coupon-code').value.toUpperCase().trim();
+            const type = document.getElementById('coupon-type').value;
+            const discountValue = parseFloat(document.getElementById('coupon-val').value);
+            const minOrderValue = parseFloat(document.getElementById('coupon-min-order').value) || 0;
+
+            const couponData = {
+                code,
+                type,
+                discountValue,
+                minOrderValue,
+                active: true
+            };
+            if (id) {
+                couponData.id = parseInt(id);
+            }
+
+            fetch('/api/coupons', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(couponData)
+            })
+            .then(res => {
+                if (res.ok) {
+                    showToast('Đã lưu mã giảm giá thành công!', 'success');
+                    resetCouponForm();
+                    loadCoupons();
+                } else {
+                    return res.text().then(text => { throw new Error(text) });
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi lưu coupon:", err);
+                showToast(err.message || 'Không thể lưu coupon!', 'error');
+            });
+        }
+
+        function editCoupon(c) {
+            document.getElementById('form-title').innerHTML = `<i class="ri-edit-line"></i> Chỉnh Sửa Mã Giảm Giá: ${c.code}`;
+            document.getElementById('coupon-id').value = c.id;
+            document.getElementById('coupon-code').value = c.code;
+            document.getElementById('coupon-type').value = c.type;
+            document.getElementById('coupon-val').value = c.discountValue;
+            document.getElementById('coupon-min-order').value = c.minOrderValue || 0;
+        }
+
+        function deleteCoupon(id) {
+            if (!confirm('Bạn có chắc muốn xóa mã giảm giá này?')) return;
+
+            fetch(`/api/coupons/${id}`, {
+                method: 'DELETE'
+            })
+            .then(res => {
+                if (res.ok) {
+                    showToast('Đã xóa mã giảm giá!', 'success');
+                    loadCoupons();
+                } else {
+                    showToast('Không thể xóa!', 'error');
+                }
+            });
+        }
+
+        function resetCouponForm() {
+            document.getElementById('form-title').innerHTML = `<i class="ri-coupon-2-line"></i> Thêm Mã Giảm Giá Mới`;
+            document.getElementById('coupon-id').value = '';
+            document.getElementById('coupon-form').reset();
+        }
+    </script>
+</body>
+</html>

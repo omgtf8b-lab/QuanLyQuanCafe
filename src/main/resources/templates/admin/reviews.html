@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Duyệt Bình Luận - Lani Coffee Admin</title>
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="background:#f8f9fa;">
+
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-brand">
+                <i class="ri-coffe-bean-fill"></i> Lani Admin
+            </div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item"><a href="/admin/dashboard"><i class="ri-dashboard-line"></i> Dashboard</a></li>
+                <li class="sidebar-item"><a href="/admin/products"><i class="ri-shopping-bag-line"></i> CRUD Sản phẩm</a></li>
+                <li class="sidebar-item"><a href="/admin/categories"><i class="ri-list-check-3"></i> Danh mục</a></li>
+                <li class="sidebar-item"><a href="/admin/orders"><i class="ri-bill-line"></i> Đơn hàng trực tuyến</a></li>
+                <li class="sidebar-item"><a href="/admin/users"><i class="ri-user-settings-line"></i> Tài khoản khách</a></li>
+                <li class="sidebar-item active"><a href="/admin/reviews"><i class="ri-message-3-line"></i> Duyệt bình luận</a></li>
+                <li class="sidebar-item" style="margin-top: 40px; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px;">
+                    <a href="/"><i class="ri-arrow-left-line"></i> Xem Cửa hàng</a>
+                </li>
+                <li class="sidebar-item"><a href="#" onclick="handleLogout()"><i class="ri-logout-box-line"></i> Đăng xuất</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <header class="admin-header">
+                <div>
+                    <h2 style="font-size:26px;">Kiểm Duyệt Đánh Giá Sản Phẩm</h2>
+                    <p style="font-size:13px; color:rgba(78,46,30,0.6);">Xem xét nội dung phản hồi, chấm điểm sao của khách hàng và duyệt hiển thị lên trang chi tiết.</p>
+                </div>
+            </header>
+
+            <!-- Table of Reviews -->
+            <div class="table-panel">
+                <div class="table-header-row">
+                    <h3 style="font-size:17px;"><i class="ri-discuss-line"></i> Danh sách tất cả bình luận đánh giá trực tuyến</h3>
+                </div>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Mã</th>
+                            <th>Mã sản phẩm</th>
+                            <th>Mã khách hàng</th>
+                            <th>Đánh giá sao</th>
+                            <th>Nội dung bình luận</th>
+                            <th>Trạng thái</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody id="admin-reviews-tbody">
+                        <!-- Nạp động qua API -->
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verify admin authentication
+            fetch('/api/users/me')
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.json();
+                })
+                .then(user => {
+                    if ((user.role.toLowerCase() !== 'admin' && user.role.toLowerCase() !== 'staff')) {
+                        window.location.href = '/login';
+                    } else {
+                        loadAdminReviews();
+                    }
+                })
+                .catch(() => {
+                    window.location.href = '/login';
+                });
+        });
+
+        function loadAdminReviews() {
+            fetch('/api/reviews')
+                .then(res => res.json())
+                .then(reviews => {
+                    const tbody = document.getElementById('admin-reviews-tbody');
+                    tbody.innerHTML = '';
+
+                    if (reviews.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="7" style="text-align:center; padding:30px; color:rgba(78,46,30,0.6);">Chưa có đánh giá sản phẩm nào trong CSDL!</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    reviews.forEach(r => {
+                        const tr = document.createElement('tr');
+                        const current = r.status.toUpperCase();
+                        
+                        const statusBadge = current === 'APPROVED' ? `<span class="status-badge completed">Đã duyệt</span>` : `<span class="status-badge pending">Chờ duyệt</span>`;
+
+                        // Stars display
+                        let starsHtml = '';
+                        for (let i = 1; i <= 5; i++) {
+                            if (i <= r.rating) {
+                                starsHtml += '<i class="ri-star-fill" style="color:var(--accent);"></i>';
+                            } else {
+                                starsHtml += '<i class="ri-star-line" style="color:#e4e2e0;"></i>';
+                            }
+                        }
+
+                        let actionBtn = '';
+                        if (current === 'PENDING') {
+                            actionBtn = `
+                                <button onclick="approveReview(${r.id})" class="nav-btn primary" style="padding:4px 10px; font-size:11px; margin-right:4px;"><i class="ri-checkbox-circle-line"></i> Phê duyệt</button>
+                            `;
+                        }
+                        
+                        actionBtn += `
+                            <button onclick="deleteReview(${r.id})" class="nav-btn outline" style="border-color:var(--danger); color:var(--danger); padding:4px 10px; font-size:11px;"><i class="ri-delete-bin-line"></i> Xóa bỏ</button>
+                        `;
+
+                        tr.innerHTML = `
+                            <td><strong>#${r.id}</strong></td>
+                            <td><a href="/product/${r.productId}" target="_blank" style="text-decoration:underline; font-weight:700;">Sản phẩm #${r.productId}</a></td>
+                            <td><strong>KH #${r.userId}</strong></td>
+                            <td>${starsHtml}</td>
+                            <td style="max-width:250px; text-overflow:ellipsis; overflow:hidden; white-space:nowrap; font-size:13px;">${r.comment}</td>
+                            <td>${statusBadge}</td>
+                            <td>${actionBtn}</td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        function approveReview(id) {
+            if (!confirm(`Bạn có chắc chắn muốn phê duyệt cho bình luận #${id} này hiển thị công khai không?`)) {
+                return;
+            }
+
+            fetch(`/api/reviews/${id}/approve`, { method: 'POST' })
+                .then(res => {
+                    if (res.ok) {
+                        showToast('Đã phê duyệt đánh giá công khai thành công!');
+                        loadAdminReviews();
+                    } else {
+                        showToast('Lỗi khi phê duyệt đánh giá!', 'error');
+                    }
+                });
+        }
+
+        function deleteReview(id) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa vĩnh viễn bình luận #${id} này không?`)) {
+                return;
+            }
+
+            fetch(`/api/reviews/${id}`, { method: 'DELETE' })
+                .then(res => {
+                    if (res.ok) {
+                        showToast('Đã xóa đánh giá thành công!');
+                        loadAdminReviews();
+                    } else {
+                        showToast('Lỗi khi xóa đánh giá!', 'error');
+                    }
+                });
+        }
+    </script>
+</body>
+</html>

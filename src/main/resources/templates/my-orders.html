@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lịch Sử Đơn Hàng - Lani Coffee</title>
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <!-- Master CSS -->
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .my-orders-container {
+            padding: 140px 0 80px 0;
+            min-height: 80vh;
+        }
+        .order-card {
+            background: white;
+            border-radius: var(--radius-md);
+            border: 1px solid rgba(78, 46, 30, 0.05);
+            padding: 24px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 24px;
+            transition: var(--transition);
+        }
+        .order-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(78, 46, 30, 0.08);
+            padding-bottom: 16px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .order-meta-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .order-code {
+            font-size: 18px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .order-date {
+            font-size: 13px;
+            color: rgba(78, 46, 30, 0.6);
+        }
+        .order-items-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        .order-item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .item-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .item-name {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+        .item-qty {
+            font-size: 13px;
+            color: rgba(78, 46, 30, 0.6);
+        }
+        .item-price {
+            font-weight: 700;
+            color: var(--primary-light);
+        }
+        .order-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(78, 46, 30, 0.05);
+            padding-top: 16px;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .order-total-box {
+            display: flex;
+            flex-direction: column;
+        }
+        .total-amount-label {
+            font-size: 12px;
+            color: rgba(78, 46, 30, 0.5);
+            text-transform: uppercase;
+        }
+        .total-amount-val {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary);
+        }
+        .order-actions {
+            display: flex;
+            gap: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- FLOATING NAVIGATION BAR -->
+    <div class="navbar-wrapper">
+        <div class="container">
+            <nav class="navbar">
+                <a href="/" class="nav-brand">
+                    <i class="ri-coffe-bean-fill" style="color: var(--secondary);"></i> Lani Coffee
+                </a>
+                <ul class="nav-links">
+                    <li><a href="/" class="nav-link">Cửa hàng</a></li>
+                    <li><a href="/cart" class="nav-link">Giỏ hàng</a></li>
+                    <li><a href="/order-tracking" class="nav-link">Theo dõi đơn hàng</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <a href="/cart" class="cart-icon-wrapper">
+                        <i class="ri-shopping-bag-3-line"></i>
+                        <span class="cart-badge" id="nav-cart-badge">0</span>
+                    </a>
+                    <div id="auth-actions-box" class="nav-actions"></div>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="my-orders-container">
+        <div class="container" style="max-width: 800px;">
+            <div style="margin-bottom: 40px; text-align: center;">
+                <h2 style="font-size: 32px;"><i class="ri-history-line" style="color: var(--secondary);"></i> Đơn Hàng Của Bạn</h2>
+                <p style="color: rgba(78,46,30,0.7); margin-top: 8px;">Xem lại lịch sử giao dịch và trạng thái vận chuyển chi tiết các đơn hàng của bạn</p>
+            </div>
+
+            <div id="orders-list-box">
+                <div style="text-align: center; padding: 40px 0;">
+                    <i class="ri-loader-4-line" style="font-size: 40px; color: var(--secondary); display: inline-block; animation: float 1s linear infinite;"></i>
+                    <p style="margin-top: 12px; color: rgba(78,46,30,0.6);">Đang tải danh sách đơn hàng...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREMIUM FOOTER -->
+    <footer style="background: var(--primary); color: var(--text-light); padding: 60px 0 30px 0; border-top: 5px solid var(--secondary);">
+        <div class="container">
+            <div style="text-align: center; font-size: 13px; color: rgba(247, 237, 226, 0.5);">
+                &copy; 2026 Lani Coffee E-Commerce Website. Thiết kế cao cấp trên nền tảng Spring Boot & SQL Server.
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchMyOrders();
+        });
+
+        function fetchMyOrders() {
+            // Kiểm tra session user trước
+            fetch('/api/users/me')
+                .then(res => {
+                    if (res.status === 401) {
+                        window.location.href = '/login?redirect=my-orders';
+                        return;
+                    }
+                    return res.json();
+                })
+                .then(user => {
+                    if (!user) return;
+                    
+                    // Fetch orders
+                    fetch(`/api/orders/user/${user.id}`)
+                        .then(res => res.json())
+                        .then(orders => {
+                            renderOrders(orders);
+                        })
+                        .catch(err => {
+                            console.error("Lỗi fetch orders:", err);
+                            document.getElementById('orders-list-box').innerHTML = `
+                                <div style="text-align: center; padding: 40px 0;">
+                                    <i class="ri-error-warning-line" style="font-size: 48px; color: var(--danger);"></i>
+                                    <p style="margin-top: 16px; font-weight: 500;">Không thể tải danh sách đơn hàng của bạn lúc này!</p>
+                                </div>
+                            `;
+                        });
+                });
+        }
+
+        function renderOrders(orders) {
+            const container = document.getElementById('orders-list-box');
+            container.innerHTML = '';
+
+            if (orders.length === 0) {
+                container.innerHTML = `
+                    <div class="glass-card" style="text-align: center; padding: 60px 40px; background: white;">
+                        <i class="ri-archive-line" style="font-size: 56px; color: var(--secondary); margin-bottom: 16px; display: inline-block;"></i>
+                        <h3>Bạn chưa có đơn hàng nào!</h3>
+                        <p style="color: rgba(78,46,30,0.6); margin: 12px 0 24px 0;">Hãy khám phá các sản phẩm cà phê hảo hạng và trải nghiệm mua sắm trực tuyến ngay.</p>
+                        <a href="/" class="nav-btn primary" style="display: inline-block; padding: 12px 28px;">Mua Sắm Ngay</a>
+                    </div>
+                `;
+                return;
+            }
+
+            orders.reverse().forEach(order => {
+                const date = new Date(order.createdAt).toLocaleString('vi-VN');
+                
+                let statusBadge = '';
+                if (order.status === 'PENDING') statusBadge = '<span class="status-badge pending">Chờ xác nhận</span>';
+                else if (order.status === 'CONFIRMED') statusBadge = '<span class="status-badge confirmed">Đã xác nhận</span>';
+                else if (order.status === 'SHIPPING') statusBadge = '<span class="status-badge shipping">Đang giao</span>';
+                else if (order.status === 'COMPLETED') statusBadge = '<span class="status-badge completed">Đã hoàn thành</span>';
+                else if (order.status === 'CANCELLED') statusBadge = '<span class="status-badge cancelled">Đã hủy</span>';
+
+                // Fetch items (chúng ta sẽ lấy items trực tiếp từ mảng items trong order hoặc gọi API nếu cần, 
+                // nhưng API Order trả về Order cùng OrderItem đã eager load hoặc có thuộc tính orderItems)
+                let itemsHtml = '';
+                const items = order.items || [];
+                items.forEach(item => {
+                    itemsHtml += `
+                        <div class="order-item-row">
+                            <div class="item-info">
+                                <span class="item-name">${item.name}</span>
+                                <span class="item-qty">x${item.quantity}</span>
+                            </div>
+                            <span class="item-price">${formatPrice(item.price)}</span>
+                        </div>
+                    `;
+                });
+
+                // Cho phép hủy nếu PENDING
+                let actionBtn = '';
+                if (order.status === 'PENDING') {
+                    actionBtn = `
+                        <button onclick="cancelOrder(${order.id})" class="nav-btn outline" style="padding: 8px 16px; font-size: 13px; border-color: var(--danger); color: var(--danger);">
+                            Hủy Đơn Hàng
+                        </button>
+                    `;
+                }
+
+                const card = document.createElement('div');
+                card.className = 'order-card';
+                card.innerHTML = `
+                    <div class="order-header">
+                        <div class="order-meta-info">
+                            <span class="order-code">Đơn hàng #${order.id}</span>
+                            <span class="order-date">${date}</span>
+                        </div>
+                        <div>
+                            ${statusBadge}
+                        </div>
+                    </div>
+                    <div class="order-items-list">
+                        ${itemsHtml}
+                    </div>
+                    <div class="order-footer">
+                        <div class="order-total-box">
+                            <span class="total-amount-label">Tổng thanh toán</span>
+                            <span class="total-amount-val">${formatPrice(order.totalAmount)}</span>
+                        </div>
+                        <div class="order-actions">
+                            <a href="/order-tracking?orderId=${order.id}" class="nav-btn primary" style="padding: 8px 16px; font-size: 13px;">
+                                <i class="ri-radar-line"></i> Theo Dõi
+                            </a>
+                            ${actionBtn}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function cancelOrder(id) {
+            if (!confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) return;
+
+            fetch(`/api/orders/cancel/${id}`, {
+                method: 'POST'
+            })
+            .then(res => {
+                if (res.ok) {
+                    showToast('Hủy đơn hàng thành công!', 'success');
+                    fetchMyOrders();
+                } else {
+                    return res.text().then(text => { throw new Error(text) });
+                }
+            })
+            .catch(err => {
+                console.error("Lỗi hủy đơn hàng:", err);
+                showToast(err.message || 'Không thể hủy đơn hàng!', 'error');
+            });
+        }
+    </script>
+</body>
+</html>

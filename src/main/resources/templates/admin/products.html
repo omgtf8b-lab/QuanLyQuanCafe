@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Sản Phẩm - Lani Coffee Admin</title>
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .crud-layout {
+            display: grid;
+            grid-template-columns: 1.25fr 0.75fr;
+            gap: 28px;
+        }
+        .uploaded-images-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 10px;
+        }
+        .uploaded-img-preview {
+            width: 70px;
+            height: 70px;
+            border-radius: var(--radius-sm);
+            border: 1px solid #dee2e6;
+            object-fit: contain;
+            background: #f8f9fa;
+            position: relative;
+        }
+    </style>
+</head>
+<body style="background:#f8f9fa;">
+
+    <div class="admin-container">
+        <!-- Sidebar Navigation -->
+        <aside class="admin-sidebar">
+            <div class="sidebar-brand">
+                <i class="ri-coffe-bean-fill"></i> Lani Admin
+            </div>
+            <ul class="sidebar-menu">
+                <li class="sidebar-item"><a href="/admin/dashboard"><i class="ri-dashboard-line"></i> Dashboard</a></li>
+                <li class="sidebar-item active"><a href="/admin/products"><i class="ri-shopping-bag-line"></i> CRUD Sản phẩm</a></li>
+                <li class="sidebar-item"><a href="/admin/categories"><i class="ri-list-check-3"></i> Danh mục</a></li>
+                <li class="sidebar-item"><a href="/admin/orders"><i class="ri-bill-line"></i> Đơn hàng trực tuyến</a></li>
+                <li class="sidebar-item"><a href="/admin/users"><i class="ri-user-settings-line"></i> Tài khoản khách</a></li>
+                <li class="sidebar-item"><a href="/admin/reviews"><i class="ri-message-3-line"></i> Duyệt bình luận</a></li>
+                <li class="sidebar-item" style="margin-top: 40px; border-top:1px solid rgba(255,255,255,0.1); padding-top:16px;">
+                    <a href="/"><i class="ri-arrow-left-line"></i> Xem Cửa hàng</a>
+                </li>
+                <li class="sidebar-item"><a href="#" onclick="handleLogout()"><i class="ri-logout-box-line"></i> Đăng xuất</a></li>
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+            <header class="admin-header">
+                <div>
+                    <h2 style="font-size:26px;">Quản Lý Danh Sách Đồ Uống</h2>
+                    <p style="font-size:13px; color:rgba(78,46,30,0.6);">Thêm mới, sửa đổi thông tin sản phẩm đồ uống, điều chỉnh tồn kho và upload nhiều ảnh đại diện.</p>
+                </div>
+            </header>
+
+            <div class="crud-layout">
+                
+                <!-- Left Side: Table List of Products -->
+                <div class="table-panel" style="margin-bottom: 0;">
+                    <div class="table-header-row">
+                        <h3 style="font-size:17px;"><i class="ri-list-check"></i> Danh sách sản phẩm trong kho</h3>
+                        <button onclick="resetProductForm()" class="nav-btn primary" style="padding:6px 14px; font-size:13px;"><i class="ri-add-line"></i> Thêm mới</button>
+                    </div>
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Ảnh</th>
+                                <th>Tên sản phẩm</th>
+                                <th>Thương hiệu</th>
+                                <th>Giá bán</th>
+                                <th>Tồn kho</th>
+                                <th>Bán online</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-products-tbody">
+                            <!-- Nạp động qua API -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Right Side: Add / Edit Product Form Card -->
+                <div class="glass-card" style="padding: 28px; height: fit-content;">
+                    <h3 id="form-card-title" style="margin-bottom: 20px; border-bottom:2px solid var(--bg-light); padding-bottom:8px;"><i class="ri-add-box-line"></i> Thêm sản phẩm mới</h3>
+                    
+                    <form id="product-crud-form" onsubmit="handleProductSaveSubmit(event)">
+                        <input type="hidden" id="prod-id" value="">
+
+                        <div class="form-group">
+                            <label class="form-label" for="prod-name">Tên sản phẩm/đồ uống</label>
+                            <input type="text" id="prod-name" class="form-input" placeholder="Ví dụ: Bạc Xỉu" required>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                            <div class="form-group">
+                                <label class="form-label" for="prod-brand">Thương hiệu</label>
+                                <input type="text" id="prod-brand" class="form-input" placeholder="Ví dụ: Lani Farm" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="prod-category">Danh mục</label>
+                                <select id="prod-category" class="sort-select" style="width:100%; border:1.5px solid rgba(78,46,30,0.15);" required>
+                                    <!-- Nạp danh mục động -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                            <div class="form-group">
+                                <label class="form-label" for="prod-price">Giá niêm yết (đ)</label>
+                                <input type="number" id="prod-price" class="form-input" placeholder="250000" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="prod-saleprice">Giá KM online (đ)</label>
+                                <input type="number" id="prod-saleprice" class="form-input" placeholder="220000 hoặc bỏ trống" min="0">
+                            </div>
+                        </div>
+
+                        <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px;">
+                            <div class="form-group">
+                                <label class="form-label" for="prod-stock">Số lượng tồn kho</label>
+                                <input type="number" id="prod-stock" class="form-input" placeholder="50" min="0" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="prod-available">Mở bán trực tuyến</label>
+                                <select id="prod-available" class="sort-select" style="width:100%; border:1.5px solid rgba(78,46,30,0.15);">
+                                    <option value="true">Cho phép đặt hàng</option>
+                                    <option value="false">Ngừng kinh doanh</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" for="prod-desc">Mô tả đặc điểm sản phẩm (hương vị, nguyên liệu...)</label>
+                            <textarea id="prod-desc" class="form-input" rows="4" placeholder="Nhập mô tả sản phẩm..." required></textarea>
+                        </div>
+
+                        <!-- Main Image Upload -->
+                        <div class="form-group" style="border-top:1px solid #e9ecef; padding-top:16px;">
+                            <label class="form-label"><i class="ri-image-add-line"></i> Tải ảnh đại diện lên server vật lý</label>
+                            <input type="file" id="prod-file-input" class="form-input" onchange="uploadProductFile(event)" style="background:white; padding:8px;">
+                            <input type="hidden" id="prod-image-url" value="">
+                            <div id="main-image-preview-box" style="margin-top:10px; display:none;">
+                                <img id="main-image-preview-img" src="" style="width:80px; height:80px; object-fit:contain; border:1px solid #dee2e6; padding:4px; border-radius:var(--radius-sm);">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="buy-now-btn" style="width:100%; height:46px; margin-top:20px;">
+                            <i class="ri-save-line"></i> Lưu sản phẩm
+                        </button>
+                    </form>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        let categories = [];
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Verify admin authentication
+            fetch('/api/users/me')
+                .then(res => {
+                    if (!res.ok) throw new Error();
+                    return res.json();
+                })
+                .then(user => {
+                    if ((user.role.toLowerCase() !== 'admin' && user.role.toLowerCase() !== 'staff')) {
+                        window.location.href = '/login';
+                    } else {
+                        loadCategoriesDropdown();
+                        loadAdminProducts();
+                    }
+                })
+                .catch(() => {
+                    window.location.href = '/login';
+                });
+        });
+
+        function loadCategoriesDropdown() {
+            fetch('/api/categories')
+                .then(res => res.json())
+                .then(data => {
+                    categories = data;
+                    const select = document.getElementById('prod-category');
+                    select.innerHTML = '';
+                    data.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.id;
+                        opt.innerText = c.name;
+                        select.appendChild(opt);
+                    });
+                });
+        }
+
+        function loadAdminProducts() {
+            fetch('/api/products')
+                .then(res => res.json())
+                .then(products => {
+                    const tbody = document.getElementById('admin-products-tbody');
+                    tbody.innerHTML = '';
+
+                    if (products.length === 0) {
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="7" style="text-align:center; padding:30px; color:rgba(78,46,30,0.6);">Chưa có sản phẩm nào được nhập kho!</td>
+                            </tr>
+                        `;
+                        return;
+                    }
+
+                    products.forEach(p => {
+                        const tr = document.createElement('tr');
+                        const priceDisplay = p.salePrice ? `<strong style="color:var(--danger);">${formatPrice(p.salePrice)}</strong> <span style="text-decoration:line-through; font-size:11px; color:gray;">${formatPrice(p.price)}</span>` : `<strong>${formatPrice(p.price)}</strong>`;
+                        
+                        const statusBadge = p.stock > 0 && p.available ? `<span class="status-badge completed" style="background:#e3faf2; color:#0ca678;">Đang bán</span>` : `<span class="status-badge pending" style="background:#ffe3e3; color:var(--danger);">Dừng bán</span>`;
+
+                        tr.innerHTML = `
+                            <td><img src="${p.imageUrl || '/uploads/default.png'}" style="width:40px; height:40px; object-fit:contain;" onerror="handleImgError(this)"></td>
+                            <td><strong>${p.name}</strong></td>
+                            <td><span style="font-weight:600; color:var(--secondary);">${p.brand || 'Lani'}</span></td>
+                            <td>${priceDisplay}</td>
+                            <td style="font-weight:700;">${p.stock} gói</td>
+                            <td>${statusBadge}</td>
+                            <td>
+                                <button onclick="editProduct(${p.id})" style="background:transparent; color:var(--primary-light); font-size:18px; cursor:pointer; margin-right:12px;"><i class="ri-edit-line"></i></button>
+                                <button onclick="deleteProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}')" style="background:transparent; color:var(--danger); font-size:18px; cursor:pointer;"><i class="ri-delete-bin-line"></i></button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                });
+        }
+
+        // Handle physical file upload to backend physically
+        function uploadProductFile(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('/api/products/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => {
+                if (!res.ok) throw new Error('Không thể tải ảnh lên');
+                return res.json();
+            })
+            .then(data => {
+                document.getElementById('prod-image-url').value = data.url;
+                const previewBox = document.getElementById('main-image-preview-box');
+                const previewImg = document.getElementById('main-image-preview-img');
+                previewImg.src = data.url;
+                previewBox.style.display = 'block';
+                showToast('Đã tải hình ảnh vật lý lên máy chủ backend thành công!');
+            })
+            .catch(err => {
+                showToast('Lỗi tải ảnh: ' + err.message, 'error');
+            });
+        }
+
+        // Edit product
+        function editProduct(id) {
+            fetch(`/api/products/${id}`)
+                .then(res => res.json())
+                .then(p => {
+                    document.getElementById('prod-id').value = p.id;
+                    document.getElementById('prod-name').value = p.name;
+                    document.getElementById('prod-brand').value = p.brand;
+                    document.getElementById('prod-category').value = p.categoryId;
+                    document.getElementById('prod-price').value = p.price;
+                    document.getElementById('prod-saleprice').value = p.salePrice || '';
+                    document.getElementById('prod-stock').value = p.stock;
+                    document.getElementById('prod-available').value = p.available.toString();
+                    document.getElementById('prod-desc').value = p.description;
+                    
+                    document.getElementById('prod-image-url').value = p.imageUrl || '';
+                    const previewBox = document.getElementById('main-image-preview-box');
+                    if (p.imageUrl) {
+                        document.getElementById('main-image-preview-img').src = p.imageUrl;
+                        previewBox.style.display = 'block';
+                    } else {
+                        previewBox.style.display = 'none';
+                    }
+
+                    document.getElementById('form-card-title').innerHTML = `<i class="ri-edit-box-line"></i> Chỉnh sửa sản phẩm #${p.id}`;
+                    showToast('Đã lấy dữ liệu sản phẩm thành công!');
+                });
+        }
+
+        // Delete product
+        function deleteProduct(id, name) {
+            if (!confirm(`Bạn có chắc chắn muốn xóa sản phẩm '${name}' ra khỏi hệ thống vĩnh viễn không?`)) {
+                return;
+            }
+
+            fetch(`/api/products/${id}`, { method: 'DELETE' })
+                .then(res => {
+                    if (res.ok) {
+                        showToast(`Đã xóa thành công sản phẩm '${name}'!`);
+                        loadAdminProducts();
+                        resetProductForm();
+                    } else {
+                        showToast('Lỗi khi xóa sản phẩm!', 'error');
+                    }
+                });
+        }
+
+        // Reset Form
+        function resetProductForm() {
+            document.getElementById('prod-id').value = '';
+            document.getElementById('product-crud-form').reset();
+            document.getElementById('prod-image-url').value = '';
+            document.getElementById('main-image-preview-box').style.display = 'none';
+            document.getElementById('form-card-title').innerHTML = `<i class="ri-add-box-line"></i> Thêm sản phẩm mới`;
+        }
+
+        // Save or update product details
+        function handleProductSaveSubmit(e) {
+            e.preventDefault();
+
+            const id = document.getElementById('prod-id').value;
+            const name = document.getElementById('prod-name').value;
+            const brand = document.getElementById('prod-brand').value;
+            const catId = parseInt(document.getElementById('prod-category').value);
+            const price = parseFloat(document.getElementById('prod-price').value);
+            const salePriceInput = document.getElementById('prod-saleprice').value;
+            const salePrice = salePriceInput !== '' ? parseFloat(salePriceInput) : null;
+            const stock = parseInt(document.getElementById('prod-stock').value);
+            const avail = document.getElementById('prod-available').value === 'true';
+            const desc = document.getElementById('prod-desc').value;
+            const img = document.getElementById('prod-image-url').value;
+
+            const payload = {
+                name: name,
+                brand: brand,
+                categoryId: catId,
+                price: price,
+                salePrice: salePrice,
+                stock: stock,
+                available: avail,
+                description: desc,
+                imageUrl: img
+            };
+
+            const url = id !== '' ? `/api/products/${id}` : '/api/products';
+            const method = id !== '' ? 'PUT' : 'POST';
+
+            fetch(url, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            })
+            .then(res => {
+                if (res.ok) {
+                    showToast('Đã lưu thông tin sản phẩm thành công!');
+                    loadAdminProducts();
+                    resetProductForm();
+                } else {
+                    showToast('Lỗi khi lưu sản phẩm!', 'error');
+                }
+            })
+            .catch(err => {
+                showToast('Lỗi kết nối API!', 'error');
+                console.error(err);
+            });
+        }
+    </script>
+</body>
+</html>

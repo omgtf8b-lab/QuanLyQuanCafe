@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="vi" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giỏ Hàng Của Bạn - Lani Coffee</title>
+    <!-- Remix Icons CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+    <!-- FLOATING NAVIGATION BAR -->
+    <div class="navbar-wrapper">
+        <div class="container">
+            <nav class="navbar">
+                <a href="/" class="nav-brand">
+                    <i class="ri-coffe-bean-fill" style="color: var(--secondary);"></i> Lani Coffee
+                </a>
+                <ul class="nav-links">
+                    <li><a href="/" class="nav-link">Cửa hàng</a></li>
+                    <li><a href="/cart" class="nav-link active">Giỏ hàng</a></li>
+                    <li><a href="/order-tracking" class="nav-link">Theo dõi đơn hàng</a></li>
+                </ul>
+                <div class="nav-actions">
+                    <a href="/cart" class="cart-icon-wrapper">
+                        <i class="ri-shopping-bag-3-line"></i>
+                        <span class="cart-badge" id="nav-cart-badge">0</span>
+                    </a>
+                    <div id="auth-actions-box" class="nav-actions">
+                        <!-- Nạp động qua app.js -->
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </div>
+
+    <!-- MAIN CART CONTENT -->
+    <div class="container cart-page-wrapper">
+        <h2 class="section-title" style="margin-bottom:40px;"><i class="ri-shopping-cart-2-line"></i> Giỏ Hàng Trực Tuyến</h2>
+
+        <div class="cart-layout" id="cart-layout-box">
+            <!-- Left Panel: Cart Items -->
+            <div class="cart-items-panel" id="cart-items-list">
+                <!-- Nạp động qua JS LocalStorage -->
+            </div>
+
+            <!-- Right Panel: Summary -->
+            <div class="cart-summary-panel">
+                <h3 style="margin-bottom: 20px; border-bottom: 2px solid var(--bg-light); padding-bottom: 12px;"><i class="ri-bill-line"></i> Hóa đơn thanh toán</h3>
+                
+                <div class="summary-row">
+                    <span style="color: rgba(78,46,30,0.6);">Tổng tiền hàng</span>
+                    <span id="summary-subtotal" style="font-weight:600;">0 đ</span>
+                </div>
+                
+                <div class="summary-row">
+                    <span style="color: rgba(78,46,30,0.6);">Mã giảm giá</span>
+                    <span id="summary-discount" style="color: var(--danger); font-weight:600;">0 đ</span>
+                </div>
+
+                <div class="summary-row">
+                    <span style="color: rgba(78,46,30,0.6);">Phí vận chuyển (COD)</span>
+                    <span style="color: var(--success); font-weight:600;">Miễn phí</span>
+                </div>
+
+                <!-- Coupon Box -->
+                <div style="margin: 24px 0 16px 0;">
+                    <label class="form-label" style="font-size:11px;">Nhập Coupon (LANI10, LANICOFFEE, FREESHIP)</label>
+                    <div class="coupon-box">
+                        <input type="text" id="coupon-code-input" class="coupon-input" placeholder="MÃ GIẢM GIÁ">
+                        <button onclick="applyCoupon()" class="nav-btn primary" style="padding: 10px 16px; border-radius: var(--radius-sm); font-size:13px;">Áp dụng</button>
+                    </div>
+                    <p id="coupon-status-msg" style="font-size:12px; font-weight:500; display:none;"></p>
+                </div>
+
+                <div class="summary-row total">
+                    <span>Tổng thanh toán</span>
+                    <span id="summary-total">0 đ</span>
+                </div>
+
+                <button onclick="proceedToCheckout()" class="buy-now-btn" style="width:100%; height:50px; font-size:16px; margin-top:20px; gap:12px;">
+                    <i class="ri-secure-payment-line" style="font-size:20px;"></i> Tiến hành thanh toán
+                </button>
+                <a href="/" style="display:block; text-align:center; margin-top:16px; font-size:14px; font-weight:600; color:var(--secondary); hover:text-decoration:underline;">
+                    <i class="ri-arrow-left-line"></i> Tiếp tục mua hàng
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- PREMIUM FOOTER -->
+    <footer style="background: var(--primary); color: var(--text-light); padding: 60px 0 30px 0; border-top: 5px solid var(--secondary); margin-top: 60px;">
+        <div class="container">
+            <div style="border-top: 1px solid rgba(247, 237, 226, 0.15); padding-top: 20px; text-align: center; font-size: 13px; color: rgba(247, 237, 226, 0.5);">
+                &copy; 2026 Lani Coffee E-Commerce Website. Thiết kế cao cấp trên nền tảng Spring Boot & SQL Server.
+            </div>
+        </div>
+    </footer>
+
+    <!-- JS Scripts -->
+    <script src="/js/app.js"></script>
+    <script>
+        let discountPercent = 0.0;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Restore coupon details if saved
+            const savedDiscount = localStorage.getItem('lani_discount_percent');
+            if (savedDiscount) {
+                discountPercent = parseFloat(savedDiscount);
+                const couponCode = localStorage.getItem('lani_applied_coupon');
+                if (couponCode) {
+                    document.getElementById('coupon-code-input').value = couponCode;
+                    const statusMsg = document.getElementById('coupon-status-msg');
+                    statusMsg.innerText = `Đã áp mã '${couponCode}' thành công!`;
+                    statusMsg.style.color = 'var(--success)';
+                    statusMsg.style.display = 'block';
+                }
+            }
+            loadCartItems();
+        });
+
+        async function loadCartItems() {
+            const cart = await getCart();
+            const list = document.getElementById('cart-items-list');
+            const layoutBox = document.getElementById('cart-layout-box');
+
+            if (cart.length === 0) {
+                layoutBox.innerHTML = `
+                    <div style="grid-column: 1/-1; text-align: center; padding: 80px 0;" class="glass-card">
+                        <i class="ri-shopping-cart-2-line" style="font-size: 64px; color: var(--secondary);"></i>
+                        <h3 style="margin-top: 20px;">Giỏ hàng của bạn đang trống!</h3>
+                        <p style="color: rgba(78,46,30,0.6); margin: 12px 0 24px 0;">Hãy quay lại trang chủ và chọn những món đồ uống ngon nhất nhé.</p>
+                        <a href="/" class="nav-btn primary" style="padding: 12px 28px; display:inline-block;"><i class="ri-store-line"></i> Quay lại cửa hàng</a>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = '';
+            
+            cart.forEach(item => {
+                const totalLine = item.price * item.quantity;
+                const row = document.createElement('div');
+                row.className = 'cart-item-row';
+                row.innerHTML = `
+                    <img src="${item.product.imageUrl || '/uploads/default-coffee.png'}" alt="${item.product.name}" class="cart-item-img" onerror="handleImgError(this)">
+                    <div class="cart-item-info">
+                        <h4><a href="/product/${item.productId}">${item.product.name}</a></h4>
+                        <span>${formatPrice(item.product.salePrice || item.product.price)}</span>
+                    </div>
+                    <div class="qty-counter" style="scale: 0.85;">
+                        <button onclick="updateItemQty(${item.productId}, ${item.quantity - 1})" class="qty-btn">-</button>
+                        <span class="qty-val">${item.quantity}</span>
+                        <button onclick="updateItemQty(${item.productId}, ${item.quantity + 1})" class="qty-btn">+</button>
+                    </div>
+                    <span style="font-weight:700; color:var(--primary); font-size:15px; text-align:right;">${formatPrice((item.product.salePrice || item.product.price) * item.quantity)}</span>
+                    <button onclick="removeItem(${item.productId}, '${item.product.name.replace(/'/g, "\\'")}')" 
+                            style="background:transparent; color:var(--danger); font-size:20px; cursor:pointer; text-align:right;">
+                        <i class="ri-delete-bin-6-line"></i>
+                    </button>
+                `;
+                list.appendChild(row);
+            });
+
+            await calculateTotals();
+        }
+
+        function updateItemQty(id, newQty) {
+            if (newQty < 1) return;
+            
+            // Check stock of product via API
+            fetch(`/api/products/${id}`)
+                .then(res => res.json())
+                .then(p => {
+                    if (newQty > p.stock) {
+                        showToast(`Bạn chỉ được đặt tối đa ${p.stock} gói theo tồn kho có sẵn!`, 'warning');
+                        updateQuantity(id, p.stock);
+                    } else {
+                        updateQuantity(id, newQty);
+                    }
+                    // loadCartItems is called inside app.js updateQuantity
+                });
+        }
+
+        function removeItem(id, name) {
+            removeFromCart(id);
+            showToast(`Đã xóa '${name}' khỏi giỏ hàng!`);
+            // loadCartItems is called inside app.js removeFromCart
+        }
+
+        async function calculateTotals() {
+            const subtotal = await getCartTotal();
+            const discount = subtotal * (discountPercent / 100);
+            const total = subtotal - discount;
+
+            document.getElementById('summary-subtotal').innerText = formatPrice(subtotal);
+            document.getElementById('summary-discount').innerText = `- ${formatPrice(discount)}`;
+            document.getElementById('summary-total').innerText = formatPrice(total);
+
+            // Save discount value into storage for checkout
+            localStorage.setItem('lani_discount_amount', discount);
+        }
+
+        async function applyCoupon() {
+            const input = document.getElementById('coupon-code-input');
+            const code = input.value.trim();
+            const statusMsg = document.getElementById('coupon-status-msg');
+            const subtotal = await getCartTotal();
+
+            if (code === '') {
+                showToast('Vui lòng nhập mã giảm giá!', 'warning');
+                return;
+            }
+
+            fetch(`/api/orders/coupons/validate?code=${encodeURIComponent(code)}&orderValue=${subtotal}`)
+                .then(res => res.json())
+                .then(data => {
+                    statusMsg.style.display = 'block';
+                    statusMsg.innerText = data.message;
+                    
+                    if (data.valid) {
+                        statusMsg.style.color = 'var(--success)';
+                        discountPercent = data.discountPercent;
+                        localStorage.setItem('lani_discount_percent', discountPercent);
+                        localStorage.setItem('lani_applied_coupon', code.toUpperCase().trim());
+                        calculateTotals();
+                        showToast('Đã áp dụng mã giảm giá thành công!');
+                    } else {
+                        statusMsg.style.color = 'var(--danger)';
+                        discountPercent = 0.0;
+                        localStorage.removeItem('lani_discount_percent');
+                        localStorage.removeItem('lani_applied_coupon');
+                        calculateTotals();
+                        showToast(data.message || 'Mã giảm giá không hợp lệ!', 'error');
+                    }
+                })
+                .catch(err => {
+                    showToast('Lỗi xác thực coupon!', 'error');
+                });
+        }
+
+        async function proceedToCheckout() {
+            const cart = await getCart();
+            if (cart.length === 0) {
+                showToast('Giỏ hàng trống!', 'warning');
+                return;
+            }
+            window.location.href = '/checkout';
+        }
+    </script>
+</body>
+</html>
